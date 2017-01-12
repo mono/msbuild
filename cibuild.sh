@@ -135,7 +135,7 @@ BOOTSTRAP_ONLY=false
 THIS_SCRIPT_PATH="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 PACKAGES_DIR="$THIS_SCRIPT_PATH/packages"
 TOOLS_DIR="$THIS_SCRIPT_PATH/Tools"
-#MSBUILD_DOWNLOAD_URL="https://github.com/Microsoft/msbuild/releases/download/mono-hosted-msbuild-v0.2/mono_msbuild_bootstrap_5e01f07.zip"
+#MSBUILD_DOWNLOAD_URL="https://github.com/Microsoft/msbuild/releases/download/mono-hosted-msbuild-v0.03/mono_msbuild_d25dd923839404bd64cc63f420e75acf96fc75c4.zip"
 MSBUILD_DOWNLOAD_URL="https://github.com/radical/msbuild/releases/download/v0.03/mono_msbuild_d25dd923839404bd64cc63f420e75acf96fc75c4.zip"
 MSBUILD_ZIP="$PACKAGES_DIR/msbuild.zip"
 HOME_DEFAULT="$WORKSPACE/msbuild-CI-home"
@@ -223,6 +223,16 @@ if [ "$target" = "" ]; then
     target=CoreCLR
 fi
 
+if [ "$host" = "Mono" ]; then
+    # check if mono is available
+    echo "debug: which mono: `which mono`"
+    echo "MONO_BIN_DIR: $MONO_BIN_DIR"
+    if [ "`which mono`" = "" -a "$MONO_BIN_DIR" = "" ]; then
+        echo "** Error: Building with host Mono, requires Mono to be installed."
+        exit 1
+    fi
+fi
+
 case $target in
     CoreCLR)
         CONFIGURATION=Debug-NetCore
@@ -263,6 +273,12 @@ case $host in
         setMonoDir
         RUNTIME_HOST="${MONO_BIN_DIR}mono"
         MSBUILD_EXE="$PACKAGES_DIR/msbuild/MSBuild.exe"
+        CSC_ARGS="/p:CscToolExe=csc.exe /p:CscToolPath=$PACKAGES_DIR/msbuild/ /p:DebugType=portable"
+
+        if [[ "$MONO_BIN_DIR" != "" ]]; then
+            echo "** Using mono from $RUNTIME_HOST"
+            $RUNTIME_HOST --version
+        fi
 
         downloadMSBuildForMono
         ;;
