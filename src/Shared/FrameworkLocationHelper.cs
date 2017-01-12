@@ -1038,7 +1038,7 @@ namespace Microsoft.Build.Shared
         {
             ToolsetConfigurationSection configurationSection = null;
 
-            if (ToolsetConfigurationReaderHelpers.ConfigurationFileMayHaveToolsets())
+            if (ConfigurationFileMayHaveToolsets())
             {
                 Configuration configuration = BuildEnvironmentHelper.Instance.RunningTests
                                                   ? ConfigurationManager.OpenExeConfiguration(
@@ -1051,6 +1051,35 @@ namespace Microsoft.Build.Shared
 
             return configurationSection?.Toolsets.GetElement(toolsVersion);
         }
+#endif
+
+#if FEATURE_SYSTEM_CONFIGURATION
+       /// <summary>
+       /// Creating a ToolsetConfigurationReader, and also reading toolsets from the 
+       /// configuration file, are a little expensive. To try to avoid this cost if it's 
+       /// not necessary, we'll check if the file exists first. If it exists, we'll scan for 
+       /// the string "toolsVersion" to see if it might actually have any tools versions
+       /// defined in it.
+       /// </summary>
+       /// <returns>True if there may be toolset definitions, otherwise false</returns>
+       private static bool ConfigurationFileMayHaveToolsets()
+       {
+           bool result;
+
+           try
+           {
+               var configFile = BuildEnvironmentHelper.Instance.CurrentMSBuildConfigurationFile;
+               result = File.Exists(configFile) && File.ReadAllText(configFile).Contains("toolsVersion");
+           }
+           catch (Exception e) when (ExceptionHandling.IsIoRelatedException(e))
+           {
+               // There was some problem reading the config file: let the configuration reader
+               // encounter it
+               result = true;
+           }
+
+           return result;
+       }
 #endif
 
         /// <summary>
