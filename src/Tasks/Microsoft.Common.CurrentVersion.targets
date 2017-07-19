@@ -161,7 +161,8 @@ Copyright (C) Microsoft Corporation. All rights reserved.
     <_DocumentationFileProduced Condition="'$(DocumentationFile)'==''">false</_DocumentationFileProduced>
 
     <!-- Whether or not a reference assembly is produced. -->
-    <ProduceReferenceAssembly Condition="'$(ProduceReferenceAssembly)' == ''">false</ProduceReferenceAssembly>
+    <_OriginalProduceReferenceAssembly>$(ProduceReferenceAssembly)</_OriginalProduceReferenceAssembly>
+    <ProduceReferenceAssembly>false</ProduceReferenceAssembly>
   </PropertyGroup>
 
   <PropertyGroup Condition=" '$(OutputPath)' == '' ">
@@ -4079,7 +4080,7 @@ Copyright (C) Microsoft Corporation. All rights reserved.
     </Copy>
 
     <!-- Copy the reference assembly build product (.dll or .exe). -->
-    <CopyRefAssembly
+    <!-- CopyRefAssembly
         SourcePath="@(IntermediateRefAssembly)"
         DestinationPath="$(TargetRefPath)"
         Condition="'$(ProduceReferenceAssembly)' == 'true' and '$(CopyBuildOutputToOutputDirectory)' == 'true' and '$(SkipCopyBuildProduct)' != 'true'"
@@ -4088,7 +4089,10 @@ Copyright (C) Microsoft Corporation. All rights reserved.
       <Output TaskParameter="DestinationPath" ItemName="ReferenceAssembly"/>
       <Output TaskParameter="DestinationPath" ItemName="FileWrites"/>
 
-    </CopyRefAssembly>
+    </CopyRefAssembly -->
+    <Warning
+	    Text="Ignoring %24(ProduceReferenceAssembly) as generation of reference assemblies is not supported on Mono yet. You can set it conditionally as &lt;ProduceReferenceAssembly Condition=&quot;'%24(MSBuildRuntimeType)' != 'Mono'&quot;&gt;true&lt;/ProduceReferenceAssembly&gt;"
+	    Condition="'$(_OriginalProduceReferenceAssembly)' == 'true'" />
 
     <Message Importance="High" Text="$(MSBuildProjectName) -&gt; @(MainAssembly->'%(FullPath)')" Condition="'$(CopyBuildOutputToOutputDirectory)' == 'true' and '$(SkipCopyBuildProduct)'!='true'" />
 
