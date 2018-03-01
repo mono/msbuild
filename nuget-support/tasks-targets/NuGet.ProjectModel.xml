@@ -314,7 +314,9 @@
         <member name="P:NuGet.ProjectModel.PackageSpec.RestoreSettings">
             <summary>
             Project Settings is used to pass settings like HideWarningsAndErrors down to lower levels.
+            Currently they do not include any settings that affect the final result of restore.
             This should not be part of the Equals and GetHashCode.
+            Don't write this to the package spec
             </summary>
         </member>
         <member name="P:NuGet.ProjectModel.PackageSpec.RestoreMetadata">

@@ -803,6 +803,9 @@ namespace Microsoft.Build.Evaluation
 
                 _evaluationLoggingContext = new EvaluationLoggingContext(loggingService, buildEventContext, projectFile);
                 _data.EvaluationId = _evaluationLoggingContext.BuildEventContext.EvaluationId;
+
+                _evaluationLoggingContext.LogProjectEvaluationStarted();
+
                 ErrorUtilities.VerifyThrow(_data.EvaluationId != BuildEventContext.InvalidEvaluationId, "Evaluation should produce an evaluation ID");
 
 #if MSBUILDENABLEVSPROFILING
@@ -2496,6 +2499,28 @@ namespace Microsoft.Build.Evaluation
 
                 if (string.IsNullOrEmpty(sdkRootPath))
                 {
+                    if (_loadSettings.HasFlag(ProjectLoadSettings.IgnoreMissingImports))
+                    {
+                        ProjectImportedEventArgs eventArgs = new ProjectImportedEventArgs(
+                            importElement.Location.Line,
+                            importElement.Location.Column,
+                            ResourceUtilities.GetResourceString("CouldNotResolveSdk"),
+                            importElement.ParsedSdkReference.ToString())
+                        {
+                            BuildEventContext = _evaluationLoggingContext.BuildEventContext,
+                            UnexpandedProject = importElement.Project,
+                            ProjectFile = importElement.ContainingProject.FullPath,
+                            ImportedProjectFile = null,
+                            ImportIgnored = true,
+                        };
+
+                        _evaluationLoggingContext.LogBuildEvent(eventArgs);
+
+                        projects = new List<ProjectRootElement>();
+
+                        return;
+                    }
+
                     ProjectErrorUtilities.ThrowInvalidProject(importElement.SdkLocation, "CouldNotResolveSdk", importElement.ParsedSdkReference.ToString());
                 }
 

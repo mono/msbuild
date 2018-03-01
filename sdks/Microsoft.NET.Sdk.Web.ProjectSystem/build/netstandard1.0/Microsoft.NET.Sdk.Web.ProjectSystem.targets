@@ -19,6 +19,7 @@ Copyright (c) .NET Foundation. All rights reserved.
 
   <PropertyGroup>
     <EnableDefaultContentItems Condition=" '$(EnableDefaultContentItems)' == '' ">true</EnableDefaultContentItems>
+    <RunWorkingDirectory Condition=" '$(RunWorkingDirectory)' == '' and '$(EnableDefaultRunWorkingDirectory)' != 'false' ">$(MSBuildProjectDirectory)</RunWorkingDirectory>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -33,7 +34,8 @@ Copyright (c) .NET Foundation. All rights reserved.
     <ProjectCapability Include="AspNetCore" />
     <ProjectCapability Include="Web" />
     <ProjectCapability Include="SupportHierarchyContextSvc" />
-    <ProjectCapability Include="DynamicDependentFile" />    
+    <ProjectCapability Include="DynamicDependentFile" />
+    <ProjectCapability Include="DynamicFileNesting" />
   </ItemGroup>
 
   <!-- Web specific properties -->
