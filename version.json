@@ -1,6 +1,7 @@
 {
-  "version": "15.8-preview",
+  "version": "15.7",
   "assemblyVersion": "15.1",
+  "buildNumberOffset": "20",
   "cloudBuild": {
     "buildNumber": {
       "enabled": true,

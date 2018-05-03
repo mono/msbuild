@@ -2622,7 +2622,7 @@
         </member>
         <member name="P:NuGet.Commands.Strings.VerifyCommand_Success">
             <summary>
-              Looks up a localized string similar to Successfully verified package(s)..
+              Looks up a localized string similar to Successfully verified package &apos;{0}&apos;..
             </summary>
         </member>
         <member name="P:NuGet.Commands.Strings.VerifyCommand_VerificationTypeNotSupported">

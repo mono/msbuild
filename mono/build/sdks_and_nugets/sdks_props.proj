@@ -10,7 +10,8 @@
                   Exclude="$(DependencyNuPkgPath)/$(DependencyPackageName).nuspec;
                            $(DependencyNuPkgPath)/$(DependencyPackageName).$(DependencyPackageVersion).nupkg;
                            $(DependencyNuPkgPath)/$(DependencyPackageName).$(DependencyPackageVersion).nupkg.sha512;
-                           $(DependencyNuPkgPath)/CoreCLR/**"
+                           $(DependencyNuPkgPath)/CoreCLR/**;
+                           $(DependencyNuPkgPath)/tools/netcoreapp*/**"
                   OutputDirectory="$(SdkLayoutDirectory)" />
     </ItemGroup>
   </Target>

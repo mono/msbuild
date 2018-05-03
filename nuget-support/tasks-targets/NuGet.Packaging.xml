@@ -2538,18 +2538,19 @@
             SignerInfo for this signature.
             </summary>
         </member>
-        <member name="M:NuGet.Packaging.Signing.Signature.GetValidTimestamp(NuGet.Packaging.Signing.SignedPackageVerifierSettings,NuGet.Common.HashAlgorithmName,System.Collections.Generic.List{NuGet.Packaging.Signing.SignatureLog})">
+        <member name="M:NuGet.Packaging.Signing.Signature.TryGetValidTimestamp(NuGet.Packaging.Signing.SignedPackageVerifierSettings,NuGet.Common.HashAlgorithmName,System.Collections.Generic.List{NuGet.Packaging.Signing.SignatureLog},NuGet.Packaging.Signing.SignatureVerificationStatusFlags@,NuGet.Packaging.Signing.Timestamp@)">
             <summary>
-            
+            Get a valid timestamp from the unsigned attributes if present
             </summary>
-            <param name="allowMultipleTimestamps"></param>
-            <param name="allowIgnoreTimestamp"></param>
-            <param name="allowNoTimestamp"></param>
-            <param name="allowUnknownRevocation"></param>
-            <param name="issues"></param>
-            <returns></returns>
+            <param name="settings">Specify what is allowed in the validation for timestamp</param>
+            <param name="fingerprintAlgorithm">fingerprint algorithm for displaying timestamp's certificate information</param>
+            <param name="issues">List of log messages.</param>
+            <param name="verificationFlags">Flags that specify the status of the verification</param>
+            <param name="validTimestamp">TTimestamp found in the signature that passes validation with the given <see cref="!:settings"/></param>
+            <remarks>If <see cref="P:NuGet.Packaging.Signing.SignedPackageVerifierSettings.AllowNoTimestamp" /> is set to true this method return true with a <see cref="!:validTimestamp" /> set to null.</remarks>
+            <returns>true if a valid timestamp was found</returns>
         </member>
-        <member name="M:NuGet.Packaging.Signing.Signature.Verify(NuGet.Packaging.Signing.Timestamp,NuGet.Packaging.Signing.SignedPackageVerifierSettings,NuGet.Common.HashAlgorithmName,System.Security.Cryptography.X509Certificates.X509Certificate2Collection,System.Collections.Generic.List{NuGet.Packaging.Signing.SignatureLog})">
+        <member name="M:NuGet.Packaging.Signing.Signature.Verify(NuGet.Packaging.Signing.Timestamp,NuGet.Packaging.Signing.SignatureVerifySettings,NuGet.Common.HashAlgorithmName,System.Security.Cryptography.X509Certificates.X509Certificate2Collection,System.Collections.Generic.List{NuGet.Packaging.Signing.SignatureLog})">
             <summary>
             Verify if the signature object meets the specification trust and validity requirements.
             </summary>
@@ -2560,9 +2561,10 @@
             <param name="fingerprintAlgorithm">Algorithm used to calculate and display the certificate's fingerprint.</param>
             <param name="certificateExtraStore">Collection of certificates to help the chain building engine as an extra store.</param>
             <param name="issues">List of log messages.</param>
+            <remarks>This is only public for ease of testing</remarks>
             <returns>Status of trust for signature.</returns>
         </member>
-        <member name="M:NuGet.Packaging.Signing.Signature.GetTimestamps(System.Security.Cryptography.Pkcs.SignerInfo)">
+        <member name="M:NuGet.Packaging.Signing.Signature.GetTimestamps(System.Security.Cryptography.Pkcs.SignerInfo,System.String)">
             <summary>
             Get timestamps from the signer info
             </summary>
@@ -2602,6 +2604,39 @@
         <member name="F:NuGet.Packaging.Signing.SignatureType.Repository">
             <summary>
             Signed by the repository.
+            </summary>
+        </member>
+        <member name="T:NuGet.Packaging.Signing.SignatureVerifySettings">
+            <summary>
+            Settings to customize Signature.Verify behavior. 
+            </summary>
+        </member>
+        <member name="P:NuGet.Packaging.Signing.SignatureVerifySettings.TreatIssuesAsErrors">
+            <summary>
+            Treat any issue as fatal.
+            </summary>
+            <remarks>If set true, any issue will be an error instead of a warning</remarks>
+        </member>
+        <member name="P:NuGet.Packaging.Signing.SignatureVerifySettings.AllowUntrustedRoot">
+            <summary>
+            Specifies that a signing certificate's chain that chains to an untrusted root is allowed
+            </summary>
+        </member>
+        <member name="P:NuGet.Packaging.Signing.SignatureVerifySettings.AllowUnknownRevocation">
+            <summary>
+            Specifies that a signing certificate's chain with unknown revocation is allowed.
+            If set to true, offline revocation is allowed.
+            </summary>
+        </member>
+        <member name="P:NuGet.Packaging.Signing.SignatureVerifySettings.LogOnSignatureExpired">
+            <summary>
+            Specifies that an error should be logged when the signature is expired.
+            If set to false, this won't allow expired signatures, only skip the logging of the failure.
+            </summary>
+        </member>
+        <member name="P:NuGet.Packaging.Signing.SignatureVerifySettings.Default">
+            <summary>
+            Get default settings values for relaxed verification on a signature
             </summary>
         </member>
         <member name="T:NuGet.Packaging.Signing.SigningCertificate">
@@ -3138,6 +3173,14 @@
             finalizer impact.
             </remarks>
         </member>
+        <member name="M:NuGet.Packaging.Signing.AllowListVerificationProvider.VerifyAllowList(NuGet.Packaging.Signing.AllowListVerificationProvider.CertificateListVerificationRequest)">
+            <summary>
+            Verify an allow list with a given request
+            </summary>
+            <param name="request">Information about the allow list verification to perform</param>
+            <remarks>This method should never return a status unknown. Min is used to take the most severe status in <see cref="M:NuGet.Packaging.Signing.AllowListVerificationProvider.GetValidity(System.Collections.Generic.IEnumerable{NuGet.Packaging.Signing.PackageVerificationResult})"/>
+            therefore, if unknown is returned the verification process will return an unknown status for the whole operation</remarks>
+        </member>
         <member name="T:NuGet.Packaging.Signing.IPackageSignatureVerifier">
             <summary>
             Loads trust providers and verifies package signatures.
@@ -3193,6 +3236,10 @@
             <summary>
             Represents the trust result of a signature.
             </summary>
+            <remarks>The order of the elements on this enum is important.
+            It should be ordered from most severe to valid.
+            When a verification with multiple steps wants to be strict it should take the min
+            out of each step as the status for the whole verification.</remarks>
         </member>
         <member name="F:NuGet.Packaging.Signing.SignatureVerificationStatus.Unknown">
             <summary>
@@ -3220,6 +3267,119 @@
             Signature is valid for the verification step.
             </summary>
         </member>
+        <member name="F:NuGet.Packaging.Signing.SignatureVerificationStatusFlags.NoErrors">
+            <summary>
+            There was no error found
+            </summary>
+        </member>
+        <member name="F:NuGet.Packaging.Signing.SignatureVerificationStatusFlags.NoSignature">
+            <summary>
+            A siganture was not found
+            </summary>
+        </member>
+        <member name="F:NuGet.Packaging.Signing.SignatureVerificationStatusFlags.NoCertificate">
+            <summary>
+            Signer certificate was not found
+            </summary>
+        </member>
+        <member name="F:NuGet.Packaging.Signing.SignatureVerificationStatusFlags.MultupleSignatures">
+            <summary>
+            Multiple signatures where found
+            </summary>
+        </member>
+        <member name="F:NuGet.Packaging.Signing.SignatureVerificationStatusFlags.SignatureCheckFailed">
+            <summary>
+            A call to SignedCms.CheckSignature failed
+            </summary>
+        </member>
+        <member name="F:NuGet.Packaging.Signing.SignatureVerificationStatusFlags.SignatureAlgorithmUnsupported">
+            <summary>
+            Signature Algorithm is not supported
+            </summary>
+        </member>
+        <member name="F:NuGet.Packaging.Signing.SignatureVerificationStatusFlags.CertificatePublicKeyInvalid">
+            <summary>
+            Public key does not conform with the requirements of the spec
+            </summary>
+        </member>
+        <member name="F:NuGet.Packaging.Signing.SignatureVerificationStatusFlags.HasLifetimeSigningEku">
+            <summary>
+            Signing certificate has lifetimeSigningEku
+            </summary>
+        </member>
+        <member name="F:NuGet.Packaging.Signing.SignatureVerificationStatusFlags.CertificateValidityInTheFuture">
+            <summary>
+            Signer certificate's validity is in the future
+            </summary>
+        </member>
+        <member name="F:NuGet.Packaging.Signing.SignatureVerificationStatusFlags.CertificateExpired">
+            <summary>
+            Signing certificate has expired
+            </summary>
+        </member>
+        <member name="F:NuGet.Packaging.Signing.SignatureVerificationStatusFlags.HashAlgorithmUnsupported">
+            <summary>
+            Hashing algorithm is not supported
+            </summary>
+        </member>
+        <member name="F:NuGet.Packaging.Signing.SignatureVerificationStatusFlags.MessageImprintUnsupportedAlgorithm">
+            <summary>
+            Message imprint uses a hash algorithm that is not supported
+            </summary>
+        </member>
+        <member name="F:NuGet.Packaging.Signing.SignatureVerificationStatusFlags.IntegrityCheckFailed">
+            <summary>
+            Integrity check of the signature failed
+            </summary>
+        </member>
+        <member name="F:NuGet.Packaging.Signing.SignatureVerificationStatusFlags.ChainBuildingFailure">
+            <summary>
+            Chain building failures.
+            Some specific chain building failures (like revocation, revocation status unavailable, certificate expired, etc.)
+            are not covered by this flag because they are covered specially by another status flag.
+            </summary>
+        </member>
+        <member name="F:NuGet.Packaging.Signing.SignatureVerificationStatusFlags.UnknownRevocation">
+            <summary>
+            Revocation information was unavailable or was offline for the signer certificate
+            </summary>
+        </member>
+        <member name="F:NuGet.Packaging.Signing.SignatureVerificationStatusFlags.CertificateRevoked">
+            <summary>
+            Signing certificate was revoked
+            </summary>
+        </member>
+        <member name="F:NuGet.Packaging.Signing.SignatureVerificationStatusFlags.UntrustedRoot">
+            <summary>
+            Signing certificate chains to a certificate untrusted by the computer performing the verification
+            </summary>
+        </member>
+        <member name="P:NuGet.Packaging.Signing.SignatureVerificationSummary.SignatureType">
+            <summary>
+            Type of the signature that was verified
+            </summary>
+        </member>
+        <member name="P:NuGet.Packaging.Signing.SignatureVerificationSummary.Status">
+            <summary>
+            Status of the verification
+            </summary>
+        </member>
+        <member name="P:NuGet.Packaging.Signing.SignatureVerificationSummary.Flags">
+            <summary>
+            Reasons for the status.
+            </summary>
+        </member>
+        <member name="P:NuGet.Packaging.Signing.SignatureVerificationSummary.Timestamp">
+            <summary>
+            Timestamp used to validate certificate.
+            </summary>
+        </member>
+        <member name="P:NuGet.Packaging.Signing.SignatureVerificationSummary.ExpirationTime">
+            <summary>
+            Expiration Date and Time for signature
+            </summary>
+            <remarks>This field will only be set if the flag CertificateExpired is present <see cref="P:NuGet.Packaging.Signing.SignatureVerificationSummary.Flags" /></remarks>
+        </member>
         <member name="P:NuGet.Packaging.Signing.SignedPackageVerificationResult.Signature">
             <summary>
             Signature
@@ -3245,11 +3405,6 @@
             Allow packages that have not been explicitly trusted by the consumer.
             </summary>
         </member>
-        <member name="P:NuGet.Packaging.Signing.SignedPackageVerifierSettings.AllowUntrustedSelfIssuedCertificate">
-            <summary>
-            Allow packages that do not chain to a trusted root certificate.
-            </summary>
-        </member>
         <member name="P:NuGet.Packaging.Signing.SignedPackageVerifierSettings.AllowIgnoreTimestamp">
             <summary>
             Allow ignoring timestamp.
@@ -3263,6 +3418,11 @@
         <member name="P:NuGet.Packaging.Signing.SignedPackageVerifierSettings.AllowNoTimestamp">
             <summary>
             Allow no timestamp.
+            </summary>
+        </member>
+        <member name="P:NuGet.Packaging.Signing.SignedPackageVerifierSettings.AlwaysVerifyCountersignature">
+            <summary>
+            Always verify the countersignature if present
             </summary>
         </member>
         <member name="P:NuGet.Packaging.Signing.SignedPackageVerifierSettings.AllowUnknownRevocation">
@@ -3295,14 +3455,47 @@
             Default settings.
             </summary>
         </member>
-        <member name="M:NuGet.Packaging.Signing.SignedPackageVerifierSettings.GetVSClientDefaultPolicy(System.Collections.Generic.IReadOnlyList{NuGet.Packaging.Signing.VerificationAllowListEntry},System.Collections.Generic.IReadOnlyList{NuGet.Packaging.Signing.VerificationAllowListEntry})">
+        <member name="M:NuGet.Packaging.Signing.SignedPackageVerifierSettings.GetAcceptModeDefaultPolicy(System.Collections.Generic.IReadOnlyList{NuGet.Packaging.Signing.VerificationAllowListEntry},System.Collections.Generic.IReadOnlyList{NuGet.Packaging.Signing.VerificationAllowListEntry})">
             <summary>
-            Default policy for scenarios in VS.
+            The aceept mode policy.
+            </summary>
+        </member>
+        <member name="M:NuGet.Packaging.Signing.SignedPackageVerifierSettings.GetRequireModeDefaultPolicy(System.Collections.Generic.IReadOnlyList{NuGet.Packaging.Signing.VerificationAllowListEntry},System.Collections.Generic.IReadOnlyList{NuGet.Packaging.Signing.VerificationAllowListEntry})">
+            <summary>
+            The require mode policy.
             </summary>
         </member>
         <member name="M:NuGet.Packaging.Signing.SignedPackageVerifierSettings.GetVerifyCommandDefaultPolicy(System.Collections.Generic.IReadOnlyList{NuGet.Packaging.Signing.VerificationAllowListEntry},System.Collections.Generic.IReadOnlyList{NuGet.Packaging.Signing.VerificationAllowListEntry})">
             <summary>
             Default policy for nuget.exe verify --signatures command.
+            </summary>
+        </member>
+        <member name="P:NuGet.Packaging.Signing.VerificationAllowListEntry.Target">
+            <summary>
+            Target type of signature to verify.
+            </summary>
+        </member>
+        <member name="P:NuGet.Packaging.Signing.VerificationAllowListEntry.Placement">
+            <summary>
+            Signature placement to verify.
+            </summary>
+        </member>
+        <member name="T:NuGet.Packaging.Signing.VerificationTarget">
+            <summary>
+            Indicates the type of signature a verification is targeting
+            </summary>
+            <remarks>This target makes no assumption about the placement of the signature.
+            It only refers to author or repository type of signature.
+            If a specific placement is needed use the <see cref="T:NuGet.Packaging.Signing.SignaturePlacement" /> enum.</remarks>
+        </member>
+        <member name="F:NuGet.Packaging.Signing.VerificationTarget.Author">
+            <summary>
+            Target Author signatures
+            </summary>
+        </member>
+        <member name="F:NuGet.Packaging.Signing.VerificationTarget.Repository">
+            <summary>
+            Target Repository signatures
             </summary>
         </member>
         <member name="T:NuGet.Packaging.Signing.VerifySignaturesResult">
@@ -3359,6 +3552,11 @@
         <member name="P:NuGet.Packaging.Strings.ArgumentCannotBeNullOrEmpty">
             <summary>
               Looks up a localized string similar to The argument cannot be null or empty..
+            </summary>
+        </member>
+        <member name="P:NuGet.Packaging.Strings.AuthorPrimarySignatureFriendlyName">
+            <summary>
+              Looks up a localized string similar to author primary signature.
             </summary>
         </member>
         <member name="P:NuGet.Packaging.Strings.CertificateChainBuildFailed">
@@ -3423,7 +3621,7 @@
         </member>
         <member name="P:NuGet.Packaging.Strings.Error_NoClientAllowList">
             <summary>
-              Looks up a localized string similar to The package signature certificate cannot be trusted as no client allow list found..
+              Looks up a localized string similar to A list of trusted signers is required by the client but none was found..
             </summary>
         </member>
         <member name="P:NuGet.Packaging.Strings.Error_NoMatchingClientCertificate">
@@ -3438,7 +3636,7 @@
         </member>
         <member name="P:NuGet.Packaging.Strings.Error_NoRepoAllowList">
             <summary>
-              Looks up a localized string similar to The package signature certificate cannot be trusted as no repository allow list found..
+              Looks up a localized string similar to A repository announced that their packages should be signed but an empty list of trusted certificates was found..
             </summary>
         </member>
         <member name="P:NuGet.Packaging.Strings.Error_NotOnePrimarySignature">
@@ -3456,6 +3654,11 @@
               Looks up a localized string similar to A repository primary signature must not have a repository countersignature..
             </summary>
         </member>
+        <member name="P:NuGet.Packaging.Strings.ErrorAuthorTargetCannotBeACountersignature">
+            <summary>
+              Looks up a localized string similar to Cannot target author signatures that are countersignatures..
+            </summary>
+        </member>
         <member name="P:NuGet.Packaging.Strings.ErrorByteSignatureNotFound">
             <summary>
               Looks up a localized string similar to Byte signature not found in package archive:  0x{0}.
@@ -3466,11 +3669,6 @@
               Looks up a localized string similar to Byte signature too big to seek in current stream position..
             </summary>
         </member>
-        <member name="P:NuGet.Packaging.Strings.ErrorCertificateHasLifetimeSigningEKU">
-            <summary>
-              Looks up a localized string similar to The lifetime signing EKU is not supported..
-            </summary>
-        </member>
         <member name="P:NuGet.Packaging.Strings.ErrorDuplicatePackages">
             <summary>
               Looks up a localized string similar to There are duplicate packages: {0}.
@@ -3479,11 +3677,6 @@
         <member name="P:NuGet.Packaging.Strings.ErrorInvalidAllowedVersions">
             <summary>
               Looks up a localized string similar to Invalid allowedVersions for package id &apos;{0}&apos;: &apos;{1}&apos;.
-            </summary>
-        </member>
-        <member name="P:NuGet.Packaging.Strings.ErrorInvalidCertificateChain">
-            <summary>
-              Looks up a localized string similar to Certificate chain validation failed with error(s): {0}.
             </summary>
         </member>
         <member name="P:NuGet.Packaging.Strings.ErrorInvalidCertificateChainUnspecifiedReason">
@@ -3521,14 +3714,9 @@
               Looks up a localized string similar to Multiple timestamps are not accepted..
             </summary>
         </member>
-        <member name="P:NuGet.Packaging.Strings.ErrorNoCertificate">
-            <summary>
-              Looks up a localized string similar to The primary signature does not have a signing certificate..
-            </summary>
-        </member>
         <member name="P:NuGet.Packaging.Strings.ErrorNoTimestamp">
             <summary>
-              Looks up a localized string similar to The primary signature should be timestamped to enable long-term signature validity after the certificate has expired..
+              Looks up a localized string similar to The signature should be timestamped to enable long-term signature validity after the certificate has expired..
             </summary>
         </member>
         <member name="P:NuGet.Packaging.Strings.ErrorNullOrEmptyPackageId">
@@ -3544,11 +3732,6 @@
         <member name="P:NuGet.Packaging.Strings.ErrorPackageSignatureInvalid">
             <summary>
               Looks up a localized string similar to The package signature is invalid or cannot be verified on this platform..
-            </summary>
-        </member>
-        <member name="P:NuGet.Packaging.Strings.ErrorSignatureVerificationFailed">
-            <summary>
-              Looks up a localized string similar to Primary signature validation failed..
             </summary>
         </member>
         <member name="P:NuGet.Packaging.Strings.ErrorUnableToDeleteFile">
@@ -3761,6 +3944,11 @@
               Looks up a localized string similar to Package stream should be seekable.
             </summary>
         </member>
+        <member name="P:NuGet.Packaging.Strings.PrimarySignatureFriendlyName">
+            <summary>
+              Looks up a localized string similar to primary signature.
+            </summary>
+        </member>
         <member name="P:NuGet.Packaging.Strings.PrimarySignatureHasNoTimestamp">
             <summary>
               Looks up a localized string similar to The primary signature does not have a timestamp..
@@ -3771,6 +3959,11 @@
               Looks up a localized string similar to Arguments {0} and {1} were out of bounds for the array..
             </summary>
         </member>
+        <member name="P:NuGet.Packaging.Strings.RepositoryCountersignatureFriendlyName">
+            <summary>
+              Looks up a localized string similar to repository countersignature.
+            </summary>
+        </member>
         <member name="P:NuGet.Packaging.Strings.RepositoryCountersignatureHasNoCertificate">
             <summary>
               Looks up a localized string similar to The repository countersignature does not have a signing certificate..
@@ -3779,6 +3972,11 @@
         <member name="P:NuGet.Packaging.Strings.RepositoryCountersignatureHasNoTimestamp">
             <summary>
               Looks up a localized string similar to The repository countersignature does not have a timestamp..
+            </summary>
+        </member>
+        <member name="P:NuGet.Packaging.Strings.RepositoryPrimarySignatureFriendlyName">
+            <summary>
+              Looks up a localized string similar to repository primary signature.
             </summary>
         </member>
         <member name="P:NuGet.Packaging.Strings.SignatureContainsInvalidAttribute">
@@ -3796,6 +3994,11 @@
               Looks up a localized string similar to The package hash uses an unsupported hash algorithm..
             </summary>
         </member>
+        <member name="P:NuGet.Packaging.Strings.SignatureFriendlyName">
+            <summary>
+              Looks up a localized string similar to signature.
+            </summary>
+        </member>
         <member name="P:NuGet.Packaging.Strings.SignatureHashAlgorithm">
             <summary>
               Looks up a localized string similar to Signature Hash Algorithm: {0}.
@@ -3804,16 +4007,6 @@
         <member name="P:NuGet.Packaging.Strings.SignatureInvalidGeneralPurposeBits">
             <summary>
               Looks up a localized string similar to Invalid general purpose bit flags. Expected &apos;{0}&apos;, actual &apos;{1}&apos;..
-            </summary>
-        </member>
-        <member name="P:NuGet.Packaging.Strings.SignatureNotTimeValid">
-            <summary>
-              Looks up a localized string similar to The primary signature validity period has expired..
-            </summary>
-        </member>
-        <member name="P:NuGet.Packaging.Strings.SignatureNotYetValid">
-            <summary>
-              Looks up a localized string similar to The signing certificate is not yet valid..
             </summary>
         </member>
         <member name="P:NuGet.Packaging.Strings.SignaturePackageIntegrityFailure">
@@ -3861,6 +4054,36 @@
               Looks up a localized string similar to The package was not opened correctly to perform signature operations. Please use a Stream-based constructor to have access to signature attributes of the package..
             </summary>
         </member>
+        <member name="P:NuGet.Packaging.Strings.SignError_TimestampCertificateFailsPublicKeyLengthRequirement">
+            <summary>
+              Looks up a localized string similar to The timestamp certificate does not meet a minimum public key length requirement..
+            </summary>
+        </member>
+        <member name="P:NuGet.Packaging.Strings.SignError_TimestampIntegrityCheckFailed">
+            <summary>
+              Looks up a localized string similar to The timestamp integrity check failed..
+            </summary>
+        </member>
+        <member name="P:NuGet.Packaging.Strings.SignError_TimestampNoCertificate">
+            <summary>
+              Looks up a localized string similar to The timestamp does not have a signing certificate..
+            </summary>
+        </member>
+        <member name="P:NuGet.Packaging.Strings.SignError_TimestampNotYetValid">
+            <summary>
+              Looks up a localized string similar to The timestamp signing certificate is not yet valid..
+            </summary>
+        </member>
+        <member name="P:NuGet.Packaging.Strings.SignError_TimestampSignatureValidationFailed">
+            <summary>
+              Looks up a localized string similar to The timestamp signature validation failed..
+            </summary>
+        </member>
+        <member name="P:NuGet.Packaging.Strings.SignError_TimestampUnsupportedSignatureAlgorithm">
+            <summary>
+              Looks up a localized string similar to The timestamp certificate has an unsupported signature algorithm..
+            </summary>
+        </member>
         <member name="P:NuGet.Packaging.Strings.SignFailureCertificateInvalidProviderType">
             <summary>
               Looks up a localized string similar to The following certificate cannot be used for package signing as the private key provider is unsupported:.
@@ -3879,16 +4102,6 @@
         <member name="P:NuGet.Packaging.Strings.SigningCertificateCertificateNotFound">
             <summary>
               Looks up a localized string similar to A certificate referenced by the signing-certificate attribute could not be found..
-            </summary>
-        </member>
-        <member name="P:NuGet.Packaging.Strings.SigningCertificateFailsPublicKeyLengthRequirement">
-            <summary>
-              Looks up a localized string similar to The signing certificate does not meet a minimum public key length requirement..
-            </summary>
-        </member>
-        <member name="P:NuGet.Packaging.Strings.SigningCertificateHasUnsupportedSignatureAlgorithm">
-            <summary>
-              Looks up a localized string similar to The signing certificate has an unsupported signature algorithm..
             </summary>
         </member>
         <member name="P:NuGet.Packaging.Strings.SigningCertificateInvalid">
@@ -3921,6 +4134,26 @@
               Looks up a localized string similar to The signing-certificate-v2 attribute uses an unsupported hash algorithm..
             </summary>
         </member>
+        <member name="P:NuGet.Packaging.Strings.SigningError_CertificateFailsPublicKeyLengthRequirement">
+            <summary>
+              Looks up a localized string similar to The signing certificate does not meet a minimum public key length requirement..
+            </summary>
+        </member>
+        <member name="P:NuGet.Packaging.Strings.SigningError_CertificateHasLifetimeSigningEKU">
+            <summary>
+              Looks up a localized string similar to The lifetime signing EKU in the signing certificate is not supported..
+            </summary>
+        </member>
+        <member name="P:NuGet.Packaging.Strings.SigningError_CertificateHasUnsupportedSignatureAlgorithm">
+            <summary>
+              Looks up a localized string similar to The signing certificate has an unsupported signature algorithm..
+            </summary>
+        </member>
+        <member name="P:NuGet.Packaging.Strings.SigningError_NotYetValid">
+            <summary>
+              Looks up a localized string similar to The signing certificate is not yet valid..
+            </summary>
+        </member>
         <member name="P:NuGet.Packaging.Strings.StreamMustBeReadable">
             <summary>
               Looks up a localized string similar to The stream must be readable..
@@ -3934,11 +4167,6 @@
         <member name="P:NuGet.Packaging.Strings.StringCannotBeNullOrEmpty">
             <summary>
               Looks up a localized string similar to String argument &apos;{0}&apos; cannot be null or empty.
-            </summary>
-        </member>
-        <member name="P:NuGet.Packaging.Strings.TimestampCertificateFailsPublicKeyLengthRequirement">
-            <summary>
-              Looks up a localized string similar to The timestamp certificate does not meet a minimum public key length requirement..
             </summary>
         </member>
         <member name="P:NuGet.Packaging.Strings.TimestampCertificateInvalid">
@@ -3956,44 +4184,9 @@
               Looks up a localized string similar to The timestamp response is invalid.  Nonces did not match..
             </summary>
         </member>
-        <member name="P:NuGet.Packaging.Strings.TimestampIntegrityCheckFailed">
-            <summary>
-              Looks up a localized string similar to The timestamp integrity check failed..
-            </summary>
-        </member>
-        <member name="P:NuGet.Packaging.Strings.TimestampInvalid">
-            <summary>
-              Looks up a localized string similar to The signature contains an invalid timestamp..
-            </summary>
-        </member>
-        <member name="P:NuGet.Packaging.Strings.TimestampMessageImprintUnsupportedHashAlgorithm">
-            <summary>
-              Looks up a localized string similar to The timestamp&apos;s message imprint uses an unsupported hash algorithm..
-            </summary>
-        </member>
-        <member name="P:NuGet.Packaging.Strings.TimestampNoCertificate">
-            <summary>
-              Looks up a localized string similar to The timestamp signature does not have a signing certificate..
-            </summary>
-        </member>
-        <member name="P:NuGet.Packaging.Strings.TimestampNotYetValid">
-            <summary>
-              Looks up a localized string similar to The timestamp signing certificate is not yet valid..
-            </summary>
-        </member>
         <member name="P:NuGet.Packaging.Strings.TimestampResponseExceptionGeneral">
             <summary>
               Looks up a localized string similar to Timestamp service&apos;s response does not meet the NuGet package signature specification: &apos;{0}&apos;..
-            </summary>
-        </member>
-        <member name="P:NuGet.Packaging.Strings.TimestampSignatureValidationFailed">
-            <summary>
-              Looks up a localized string similar to Timestamp signature validation failed..
-            </summary>
-        </member>
-        <member name="P:NuGet.Packaging.Strings.TimestampUnsupportedSignatureAlgorithm">
-            <summary>
-              Looks up a localized string similar to The timestamp certificate has an unsupported signature algorithm..
             </summary>
         </member>
         <member name="P:NuGet.Packaging.Strings.TimestampValue">
@@ -4036,14 +4229,104 @@
               Looks up a localized string similar to The package signature format version is not supported. Updating your client may solve this problem..
             </summary>
         </member>
-        <member name="P:NuGet.Packaging.Strings.VerificationAuthorCertDisplay">
+        <member name="P:NuGet.Packaging.Strings.VerificationCertDisplay">
             <summary>
-              Looks up a localized string similar to Verifying signature with author certificate: {0}.
+              Looks up a localized string similar to Verifying the {0} with certificate: {1}.
             </summary>
         </member>
         <member name="P:NuGet.Packaging.Strings.VerificationTimestamperCertDisplay">
             <summary>
-              Looks up a localized string similar to Verifying timestamp with timestamping service certificate: {0}.
+              Looks up a localized string similar to Verifying {0}&apos;s timestamp with timestamping service certificate: {1}.
+            </summary>
+        </member>
+        <member name="P:NuGet.Packaging.Strings.Verify_ErrorNoCertificate">
+            <summary>
+              Looks up a localized string similar to The {0} does not have a signing certificate..
+            </summary>
+        </member>
+        <member name="P:NuGet.Packaging.Strings.VerifyChainBuildingIssue">
+            <summary>
+              Looks up a localized string similar to The {0} found a chain building issue: {1}.
+            </summary>
+        </member>
+        <member name="P:NuGet.Packaging.Strings.VerifyError_CertificateFailsPublicKeyLengthRequirement">
+            <summary>
+              Looks up a localized string similar to The {0}&apos;s certificate does not meet a minimum public key length requirement..
+            </summary>
+        </member>
+        <member name="P:NuGet.Packaging.Strings.VerifyError_CertificateHasLifetimeSigningEKU">
+            <summary>
+              Looks up a localized string similar to The lifetime signing EKU in the {0}&apos;s certificate is not supported..
+            </summary>
+        </member>
+        <member name="P:NuGet.Packaging.Strings.VerifyError_CertificateHasUnsupportedSignatureAlgorithm">
+            <summary>
+              Looks up a localized string similar to The {0}&apos;s certificate has an unsupported signature algorithm..
+            </summary>
+        </member>
+        <member name="P:NuGet.Packaging.Strings.VerifyError_CertificateNotYetValid">
+            <summary>
+              Looks up a localized string similar to The {0}&apos;s certificate is not yet valid..
+            </summary>
+        </member>
+        <member name="P:NuGet.Packaging.Strings.VerifyError_InvalidCertificateChain">
+            <summary>
+              Looks up a localized string similar to The {0}&apos;s certificate chain validation failed with error(s): {1}.
+            </summary>
+        </member>
+        <member name="P:NuGet.Packaging.Strings.VerifyError_SignatureNotTimeValid">
+            <summary>
+              Looks up a localized string similar to The {0} validity period has expired..
+            </summary>
+        </member>
+        <member name="P:NuGet.Packaging.Strings.VerifyError_SignatureVerificationFailed">
+            <summary>
+              Looks up a localized string similar to The {0} validation failed..
+            </summary>
+        </member>
+        <member name="P:NuGet.Packaging.Strings.VerifyError_TimestampCertificateFailsPublicKeyLengthRequirement">
+            <summary>
+              Looks up a localized string similar to The {0}&apos;s timestamp certificate does not meet a minimum public key length requirement..
+            </summary>
+        </member>
+        <member name="P:NuGet.Packaging.Strings.VerifyError_TimestampIntegrityCheckFailed">
+            <summary>
+              Looks up a localized string similar to The {0}&apos;s timestamp integrity check failed..
+            </summary>
+        </member>
+        <member name="P:NuGet.Packaging.Strings.VerifyError_TimestampInvalid">
+            <summary>
+              Looks up a localized string similar to The {0} contains an invalid timestamp..
+            </summary>
+        </member>
+        <member name="P:NuGet.Packaging.Strings.VerifyError_TimestampMessageImprintUnsupportedHashAlgorithm">
+            <summary>
+              Looks up a localized string similar to The {0} timestamp&apos;s message imprint uses an unsupported hash algorithm..
+            </summary>
+        </member>
+        <member name="P:NuGet.Packaging.Strings.VerifyError_TimestampNoCertificate">
+            <summary>
+              Looks up a localized string similar to The {0}&apos;s timestamp does not have a signing certificate..
+            </summary>
+        </member>
+        <member name="P:NuGet.Packaging.Strings.VerifyError_TimestampNotYetValid">
+            <summary>
+              Looks up a localized string similar to The {0}&apos;s timestamp signing certificate is not yet valid..
+            </summary>
+        </member>
+        <member name="P:NuGet.Packaging.Strings.VerifyError_TimestampSignatureValidationFailed">
+            <summary>
+              Looks up a localized string similar to The {0}&apos;s timestamp signature validation failed..
+            </summary>
+        </member>
+        <member name="P:NuGet.Packaging.Strings.VerifyError_TimestampUnsupportedSignatureAlgorithm">
+            <summary>
+              Looks up a localized string similar to The {0}&apos;s timestamp certificate has an unsupported signature algorithm..
+            </summary>
+        </member>
+        <member name="P:NuGet.Packaging.Strings.VerifyError_TimestampVerifyChainBuildingIssue">
+            <summary>
+              Looks up a localized string similar to The {0}&apos;s timestamp found a chain building issue: {1}.
             </summary>
         </member>
         <member name="M:NuGet.Packaging.TopologicalSortUtility.SortPackagesByDependencyOrder``1(System.Collections.Generic.IEnumerable{``0},System.StringComparer,System.Func{``0,System.String},System.Func{``0,System.String[]})">

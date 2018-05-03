@@ -22,6 +22,7 @@ namespace Microsoft.Build.Utilities
                 {
                     return new Traits();
                 }
+
                 return _instance;
             }
         }
