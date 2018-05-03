@@ -61,7 +61,7 @@
             TaskLoggingHelper -&gt; ILogger
             </summary>
     </member>
-    <member name="M:NuGet.Build.MSBuildLogger.LogForNonMono(NuGet.Common.IRestoreLogMessage)">
+    <member name="M:NuGet.Build.MSBuildLogger.LogForNonMono(NuGet.Common.INuGetLogMessage)">
       <summary>
             Log using with metadata for non mono platforms.
             </summary>
@@ -245,6 +245,11 @@
               Looks up a localized string similar to Invalid target framework for the file '{0}'..
             </summary>
     </member>
+    <member name="P:NuGet.Build.Tasks.Pack.Strings.IsPackableFalseError">
+      <summary>
+              Looks up a localized string similar to Cannot generate a package from a project which has IsPackable property set to false..
+            </summary>
+    </member>
     <member name="P:NuGet.Build.Tasks.Pack.Strings.NoPackItemProvided">
       <summary>
               Looks up a localized string similar to No project was provided to the PackTask..
@@ -356,7 +361,7 @@
             Indicates if this token will pro-actively raise callbacks. Callbacks are still guaranteed to fire, eventually.
             </summary>
     </member>
-    <member name="M:NuGet.Shared.NuGet.Commands324598.EqualityUtility.OrderedEquals``2(System.Collections.Generic.IEnumerable{``0},System.Collections.Generic.IEnumerable{``0},System.Func{``0,``1},System.Collections.Generic.IComparer{``1},System.Collections.Generic.IEqualityComparer{``0})">
+    <member name="M:NuGet.Shared.NuGet.Commands328525.EqualityUtility.OrderedEquals``2(System.Collections.Generic.IEnumerable{``0},System.Collections.Generic.IEnumerable{``0},System.Func{``0,``1},System.Collections.Generic.IComparer{``1},System.Collections.Generic.IEqualityComparer{``0})">
       <summary>
             Compares two enumberables for equality, ordered according to the specified key and optional comparer. Handles null values gracefully.
             </summary>
@@ -368,41 +373,41 @@
       <param name="orderComparer">An optional comparer for comparing keys</param>
       <param name="sequenceComparer">An optional comparer for sequences</param>
     </member>
-    <member name="M:NuGet.Shared.NuGet.Commands324598.EqualityUtility.SequenceEqualWithNullCheck``1(System.Collections.Generic.IEnumerable{``0},System.Collections.Generic.IEnumerable{``0},System.Collections.Generic.IEqualityComparer{``0})">
+    <member name="M:NuGet.Shared.NuGet.Commands328525.EqualityUtility.SequenceEqualWithNullCheck``1(System.Collections.Generic.IEnumerable{``0},System.Collections.Generic.IEnumerable{``0},System.Collections.Generic.IEqualityComparer{``0})">
       <summary>
             Compares two sequence for equality, allowing either sequence to be null. If one is null, both have to be
             null for equality.
             </summary>
     </member>
-    <member name="M:NuGet.Shared.NuGet.Commands324598.EqualityUtility.SetEqualsWithNullCheck``1(System.Collections.Generic.ISet{``0},System.Collections.Generic.ISet{``0},System.Collections.Generic.IEqualityComparer{``0})">
+    <member name="M:NuGet.Shared.NuGet.Commands328525.EqualityUtility.SetEqualsWithNullCheck``1(System.Collections.Generic.ISet{``0},System.Collections.Generic.ISet{``0},System.Collections.Generic.IEqualityComparer{``0})">
       <summary>
             Compares two sets for equality, allowing either sequence to be null.
             If one is null, both have to be null for equality.
             </summary>
     </member>
-    <member name="T:NuGet.Shared.NuGet.Commands324598.HashCodeCombiner">
+    <member name="T:NuGet.Shared.NuGet.Commands328525.HashCodeCombiner">
       <summary>
             Hash code creator, based on the original NuGet hash code combiner/ASP hash code combiner implementations
             </summary>
     </member>
-    <member name="M:NuGet.Shared.NuGet.Commands324598.HashCodeCombiner.GetHashCode``2(``0,``1)">
+    <member name="M:NuGet.Shared.NuGet.Commands328525.HashCodeCombiner.GetHashCode``2(``0,``1)">
       <summary>
             Create a unique hash code for the given set of items
             </summary>
     </member>
-    <member name="M:NuGet.Shared.NuGet.Commands324598.HashCodeCombiner.GetHashCode``3(``0,``1,``2)">
+    <member name="M:NuGet.Shared.NuGet.Commands328525.HashCodeCombiner.GetHashCode``3(``0,``1,``2)">
       <summary>
             Create a unique hash code for the given set of items
             </summary>
     </member>
-    <member name="M:NuGet.Shared.NuGet.Commands324598.Extensions.AsList``1(System.Collections.Generic.IEnumerable{``0})">
+    <member name="M:NuGet.Shared.NuGet.Commands328525.Extensions.AsList``1(System.Collections.Generic.IEnumerable{``0})">
       <summary>
             Return the enumerable as a List of T, copying if required. Optimized for common case where it is an List of T.
             Avoid mutating the return value.
             </summary>
       <remarks>https://aspnetwebstack.codeplex.com/SourceControl/latest#src/Common/CollectionExtensions.cs</remarks>
     </member>
-    <member name="M:NuGet.Shared.NuGet.Commands324598.Extensions.AsHashSet``1(System.Collections.Generic.ISet{``0},System.Collections.Generic.IEqualityComparer{``0})">
+    <member name="M:NuGet.Shared.NuGet.Commands328525.Extensions.AsHashSet``1(System.Collections.Generic.ISet{``0},System.Collections.Generic.IEqualityComparer{``0})">
       <summary>
             Return the ISet as a HashSet of T, copying if required. Optimized for common case where it is a HashSet of T.
             Avoid mutating the return value.
@@ -529,6 +534,21 @@
       <summary>
             This is the target framework for which this assembly was built.
             </summary>
+    </member>
+    <member name="M:NuGet.Commands.PackCollectorLogger.UpgradeWarningToErrorIfNeeded(NuGet.Common.ILogMessage)">
+      <summary>
+            This method upgrades the warning to an error if the project wide warning properties have set the code in WarningsAsErrors or
+            set TreatWarningsAsErrors to true
+            </summary>
+      <param name="message">ILogMessage to be logged as an error or warning.</param>
+      <returns>bool indicating if the message should be suppressed.</returns>
+    </member>
+    <member name="M:NuGet.Commands.PackCollectorLogger.DisplayMessage(NuGet.Common.ILogMessage)">
+      <summary>
+            Decides if the log should be passed to the inner logger.
+            </summary>
+      <param name="message">ILogMessage to be logged.</param>
+      <returns>bool indicating if this message should be logged.</returns>
     </member>
     <member name="M:NuGet.Commands.CompatibilityChecker.GetErrorMessage(NuGet.Common.NuGetLogCode,NuGet.Commands.CompatibilityIssue,NuGet.Commands.RestoreTargetGraph)">
       <summary>
@@ -1075,14 +1095,14 @@
       <param name="message">Message to be checked for no warn.</param>
       <returns>bool indicating if the IRestoreLogMessage should be suppressed or not.</returns>
     </member>
-    <member name="M:NuGet.Commands.WarningPropertiesCollection.ApplyProjectWideNoWarnProperties(NuGet.Common.ILogMessage)">
+    <member name="M:NuGet.Commands.WarningPropertiesCollection.ApplyProjectWideNoWarnProperties(NuGet.Common.ILogMessage,NuGet.ProjectModel.WarningProperties)">
       <summary>
             Method is used to check is a warning should be suppressed due to project wide no warn properties.
             </summary>
       <param name="message">Message to be checked for no warn.</param>
       <returns>bool indicating if the ILogMessage should be suppressed or not.</returns>
     </member>
-    <member name="M:NuGet.Commands.WarningPropertiesCollection.ApplyProjectWideWarningsAsErrorProperties(NuGet.Common.ILogMessage)">
+    <member name="M:NuGet.Commands.WarningPropertiesCollection.ApplyProjectWideWarningsAsErrorProperties(NuGet.Common.ILogMessage,NuGet.ProjectModel.WarningProperties)">
       <summary>
             Method is used to check is a warning should be treated as an error.
             </summary>
@@ -1404,9 +1424,9 @@
             Restore output path
             </summary>
     </member>
-    <member name="P:NuGet.Commands.RestoreRequest.BaseIntermediateOutputPath">
+    <member name="P:NuGet.Commands.RestoreRequest.MSBuildProjectExtensionsPath">
       <summary>
-            Base Intermediate output path
+            MSBuildProjectExtensionsPath
             </summary>
     </member>
     <member name="P:NuGet.Commands.RestoreRequest.ValidateRuntimeAssets">
@@ -1422,6 +1442,11 @@
     <member name="P:NuGet.Commands.RestoreRequest.PackageSignatureVerifier">
       <summary>
             Package Signature verifier
+            </summary>
+    </member>
+    <member name="P:NuGet.Commands.RestoreRequest.SignedPackageVerifierSettings">
+      <summary>
+            SignedPackageVerifierSettings to be used when verifying signed packages.
             </summary>
     </member>
     <member name="M:NuGet.Commands.RestoreResult.GetAllInstalled">
@@ -1923,11 +1948,6 @@
             </summary>
       <remarks>This is a noop if NUGET_PERSIST_DG is not set to true.</remarks>
     </member>
-    <member name="M:NuGet.Commands.MSBuildRestoreUtility.GetWarningProperties(System.String,System.String,System.String)">
-      <summary>
-            Create warning properties from the msbuild property strings.
-            </summary>
-    </member>
     <member name="M:NuGet.Commands.MSBuildRestoreUtility.FixSourcePath(System.String)">
       <summary>
             Convert http:/url to http://url 
@@ -1938,12 +1958,6 @@
     <member name="M:NuGet.Commands.MSBuildRestoreUtility.IsPersistDGSet">
       <summary>
             True if NUGET_PERSIST_DG is set to true.
-            </summary>
-    </member>
-    <member name="M:NuGet.Commands.MSBuildRestoreUtility.GetNuGetLogCodes(System.String)">
-      <summary>
-            Splits and parses a ; or , delimited list of log codes.
-            Ignores codes that are unknown.
             </summary>
     </member>
     <member name="M:NuGet.Commands.MSBuildRestoreUtility.ReplayWarningsAndErrorsAsync(NuGet.ProjectModel.LockFile,NuGet.Common.ILogger)">
@@ -1961,7 +1975,7 @@
     </member>
     <member name="M:NuGet.Commands.NoOpRestoreUtilities.GetBuildIntegratedProjectCacheFilePath(NuGet.Commands.RestoreRequest)">
       <summary>
-            The cache file path is $(BaseIntermediateOutputPath)\$(project).nuget.cache
+            The cache file path is $(MSBuildProjectExtensionsPath)\$(project).nuget.cache
             </summary>
     </member>
     <member name="M:NuGet.Commands.NoOpRestoreUtilities.GetCacheFilePath(NuGet.Commands.RestoreRequest)">
@@ -2276,6 +2290,16 @@
               Looks up a localized string similar to Invalid input '{0}'. Valid file names are 'project.json' or '*.project.json'..
             </summary>
     </member>
+    <member name="P:NuGet.Commands.Strings.Error_InvalidDependencyVersionConstraints">
+      <summary>
+              Looks up a localized string similar to Package version constraints for '{0}' return a version range that is empty..
+            </summary>
+    </member>
+    <member name="P:NuGet.Commands.Strings.Error_InvalidProjectPackageCombo">
+      <summary>
+              Looks up a localized string similar to Invalid project-package combination for {0} {1}. DotnetToolReference project style can only contain references of the DotnetTool type.
+            </summary>
+    </member>
     <member name="P:NuGet.Commands.Strings.Error_InvalidTargetFramework">
       <summary>
               Looks up a localized string similar to Failed to build package because of an unsupported targetFramework value on '{0}'..
@@ -2326,6 +2350,16 @@
               Looks up a localized string similar to Unable to find project '{0}'. Check that the project reference is valid and that the project file exists..
             </summary>
     </member>
+    <member name="P:NuGet.Commands.Strings.Error_ProjectWithIncorrectDependenciesCount">
+      <summary>
+              Looks up a localized string similar to Project {0} must have a single package reference(s)..
+            </summary>
+    </member>
+    <member name="P:NuGet.Commands.Strings.Error_ToolsPackageWithExtraPackageTypes">
+      <summary>
+              Looks up a localized string similar to Invalid tools package {0} {1}. Tools packages cannot contain more than one PackageType..
+            </summary>
+    </member>
     <member name="P:NuGet.Commands.Strings.Error_UnableToFindProjectInfo">
       <summary>
               Looks up a localized string similar to Unable to find project information for '{0}'. The project file may be invalid or missing targets required for restore..
@@ -2344,6 +2378,11 @@
     <member name="P:NuGet.Commands.Strings.Error_UnableToLocateRestoreTarget_Because">
       <summary>
               Looks up a localized string similar to Failed to find a project to restore in the folder '{0}'..
+            </summary>
+    </member>
+    <member name="P:NuGet.Commands.Strings.Error_UnableToSignPackage">
+      <summary>
+              Looks up a localized string similar to Unable to sign package..
             </summary>
     </member>
     <member name="P:NuGet.Commands.Strings.Error_UnknownBuildAction">
@@ -2552,11 +2591,6 @@
               Looks up a localized string similar to Installing {0} {1}..
             </summary>
     </member>
-    <member name="P:NuGet.Commands.Strings.Log_LoadedProject">
-      <summary>
-              Looks up a localized string similar to Loaded project {0} from {1}..
-            </summary>
-    </member>
     <member name="P:NuGet.Commands.Strings.Log_LockFileMissingLibraryForTargetLibrary">
       <summary>
               Looks up a localized string similar to {0} {1} is specified in the Lock File target for {2} but is not present in the top-level Libraries list..
@@ -2735,6 +2769,11 @@
     <member name="P:NuGet.Commands.Strings.Log_SkippingCacheFile">
       <summary>
               Looks up a localized string similar to No-Op restore. The cache will not be updated. Path: {0}.
+            </summary>
+    </member>
+    <member name="P:NuGet.Commands.Strings.Log_SkippingCompatibiilityCheckOnRidlessGraphForDotnetToolReferenceProject">
+      <summary>
+              Looks up a localized string similar to Skipping compatibility checks of the ridless graph for DotnetToolReference project type. This graph is not used. .
             </summary>
     </member>
     <member name="P:NuGet.Commands.Strings.Log_SkippingRuntimeWalk">
@@ -3022,6 +3061,11 @@
               Looks up a localized string similar to '{0}' was included in the project but doesn't exist. Skipping....
             </summary>
     </member>
+    <member name="P:NuGet.Commands.Strings.Warning_FileExcludedByDefault">
+      <summary>
+              Looks up a localized string similar to File '{0}' was not added to the package. Files and folders starting with '.' or ending with '.nupkg' are excluded by default. To include this file, use -NoDefaultExcludes from the commandline.
+            </summary>
+    </member>
     <member name="P:NuGet.Commands.Strings.Warning_MinVersionDoesNotExist">
       <summary>
               Looks up a localized string similar to {0} depends on {1} but {2} was not found. An approximate best match of {3} was resolved..
@@ -3064,17 +3108,7 @@
     </member>
     <member name="P:NuGet.Commands.Strings.Warning_SemanticVersion">
       <summary>
-              Looks up a localized string similar to Version "{0}" does not follow semantic versioning guidelines..
-            </summary>
-    </member>
-    <member name="P:NuGet.Commands.Strings.Warning_SemanticVersionSolution">
-      <summary>
-              Looks up a localized string similar to Update your nuspec file or use the AssemblyInformationalVersion assembly attribute to specify a semantic version as described at http://semver.org..
-            </summary>
-    </member>
-    <member name="P:NuGet.Commands.Strings.Warning_SemanticVersionTitle">
-      <summary>
-              Looks up a localized string similar to Use semantic versioning.
+              Looks up a localized string similar to Version "{0}" does not follow semantic versioning guidelines. Update your nuspec file or use the AssemblyInformationalVersion assembly attribute to specify a semantic version as described at http://semver.org..
             </summary>
     </member>
     <member name="P:NuGet.Commands.Strings.Warning_UnresolvedFilePath">
@@ -3155,38 +3189,6 @@
             Parse existing nuget framework for .net core 4.5.1 or 4.5 and return compatible framework instance
             </summary>
     </member>
-    <member name="M:NuGet.Commands.MSBuildStringUtility.Split(System.String)">
-      <summary>
-            Split on ; and trim. Null or empty inputs will return an
-            empty array.
-            </summary>
-    </member>
-    <member name="M:NuGet.Commands.MSBuildStringUtility.Split(System.String,System.Char[])">
-      <summary>
-            Split on ; and trim. Null or empty inputs will return an
-            empty array.
-            </summary>
-    </member>
-    <member name="M:NuGet.Commands.MSBuildStringUtility.TrimAndGetNullForEmpty(System.String)">
-      <summary>
-            Trims the provided string and converts empty strings to null.
-            </summary>
-    </member>
-    <member name="M:NuGet.Commands.MSBuildStringUtility.TrimAndExcludeNullOrEmpty(System.String[])">
-      <summary>
-            Trims the provided strings and excludes empty or null strings.
-            </summary>
-    </member>
-    <member name="M:NuGet.Commands.MSBuildStringUtility.IsTrue(System.String)">
-      <summary>
-            True if the property is set to true
-            </summary>
-    </member>
-    <member name="M:NuGet.Commands.MSBuildStringUtility.IsTrueOrEmpty(System.String)">
-      <summary>
-            True if the property is set to true or empty.
-            </summary>
-    </member>
     <member name="M:NuGet.Commands.RequestRuntimeUtility.GetRestoreRuntimes(NuGet.Commands.RestoreRequest)">
       <summary>
             Combines the project runtimes with the request.RequestedRuntimes.
@@ -3241,229 +3243,7 @@
       <param name="token">Cancellation token.</param>
       <returns>SecureString containing the user input password. The SecureString should be disposed after use.</returns>
     </member>
-    <member name="T:NuGet.Commands.Rules.AnalysisResources">
-      <summary>
-               A strongly-typed resource class, for looking up localized strings, etc.
-            </summary>
-    </member>
-    <member name="P:NuGet.Commands.Rules.AnalysisResources.ResourceManager">
-      <summary>
-               Returns the cached ResourceManager instance used by this class.
-            </summary>
-    </member>
-    <member name="P:NuGet.Commands.Rules.AnalysisResources.Culture">
-      <summary>
-               Overrides the current thread's CurrentUICulture property for all
-               resource lookups using this strongly typed resource class.
-            </summary>
-    </member>
-    <member name="P:NuGet.Commands.Rules.AnalysisResources.AssemblyOutsideLibDescription">
-      <summary>
-               Looks up a localized string similar to The assembly '{0}' is not inside the 'lib' folder and hence it won't be added as reference when the package is installed into a project..
-            </summary>
-    </member>
-    <member name="P:NuGet.Commands.Rules.AnalysisResources.AssemblyOutsideLibSolution">
-      <summary>
-               Looks up a localized string similar to Move it into the 'lib' folder if it should be referenced..
-            </summary>
-    </member>
-    <member name="P:NuGet.Commands.Rules.AnalysisResources.AssemblyOutsideLibTitle">
-      <summary>
-               Looks up a localized string similar to Assembly outside lib folder..
-            </summary>
-    </member>
-    <member name="P:NuGet.Commands.Rules.AnalysisResources.AssemblyUnderLibDescription">
-      <summary>
-               Looks up a localized string similar to The assembly '{0}' is placed directly under 'lib' folder. It is recommended that assemblies be placed inside a framework-specific folder..
-            </summary>
-    </member>
-    <member name="P:NuGet.Commands.Rules.AnalysisResources.AssemblyUnderLibSolution">
-      <summary>
-               Looks up a localized string similar to Move it into a framework-specific folder. If this assembly is targeted for multiple frameworks, ignore this warning..
-            </summary>
-    </member>
-    <member name="P:NuGet.Commands.Rules.AnalysisResources.AssemblyUnderLibTitle">
-      <summary>
-               Looks up a localized string similar to Assembly not inside a framework folder..
-            </summary>
-    </member>
-    <member name="P:NuGet.Commands.Rules.AnalysisResources.DefaultSpecValue">
-      <summary>
-               Looks up a localized string similar to The value "{0}" for {1} is a sample value and should be removed..
-            </summary>
-    </member>
-    <member name="P:NuGet.Commands.Rules.AnalysisResources.DefaultSpecValueSolution">
-      <summary>
-               Looks up a localized string similar to Replace it with an appropriate value or remove it and rebuild your package..
-            </summary>
-    </member>
-    <member name="P:NuGet.Commands.Rules.AnalysisResources.DefaultSpecValueTitle">
-      <summary>
-               Looks up a localized string similar to Remove sample nuspec values..
-            </summary>
-    </member>
-    <member name="P:NuGet.Commands.Rules.AnalysisResources.InvalidFrameworkDescription">
-      <summary>
-               Looks up a localized string similar to The folder '{0}' under 'lib' is not recognized as a valid framework name or a supported culture identifier..
-            </summary>
-    </member>
-    <member name="P:NuGet.Commands.Rules.AnalysisResources.InvalidFrameworkSolution">
-      <summary>
-               Looks up a localized string similar to Rename it to a valid framework name..
-            </summary>
-    </member>
-    <member name="P:NuGet.Commands.Rules.AnalysisResources.InvalidFrameworkTitle">
-      <summary>
-               Looks up a localized string similar to Invalid framework folder..
-            </summary>
-    </member>
-    <member name="P:NuGet.Commands.Rules.AnalysisResources.InvalidPrereleaseDependency_Description">
-      <summary>
-               Looks up a localized string similar to A stable release of a package should not have a prerelease dependency..
-            </summary>
-    </member>
-    <member name="P:NuGet.Commands.Rules.AnalysisResources.InvalidPrereleaseDependency_Solution">
-      <summary>
-               Looks up a localized string similar to Either modify the version spec of dependency "{0}" or update the version field in the nuspec..
-            </summary>
-    </member>
-    <member name="P:NuGet.Commands.Rules.AnalysisResources.InvalidPrereleaseDependency_Title">
-      <summary>
-               Looks up a localized string similar to Prerelease dependency in stable package..
-            </summary>
-    </member>
-    <member name="P:NuGet.Commands.Rules.AnalysisResources.LegacyVersionDescription">
-      <summary>
-               Looks up a localized string similar to The package version '{0}' uses SemVer 2.0.0 or components of SemVer 1.0.0 that are not supported on legacy clients. This message can be ignored if the package is not intended for older clients..
-            </summary>
-    </member>
-    <member name="P:NuGet.Commands.Rules.AnalysisResources.LegacyVersionSolution">
-      <summary>
-               Looks up a localized string similar to Change the package version to a SemVer 1.0.0 string. If the version contains a release label it must start with a letter..
-            </summary>
-    </member>
-    <member name="P:NuGet.Commands.Rules.AnalysisResources.LegacyVersionTitle">
-      <summary>
-               Looks up a localized string similar to Package version not supported on legacy clients..
-            </summary>
-    </member>
-    <member name="P:NuGet.Commands.Rules.AnalysisResources.MisplacedInitScriptDescription">
-      <summary>
-               Looks up a localized string similar to The file '{0}' will be ignored by NuGet because it is not directly under 'tools' folder..
-            </summary>
-    </member>
-    <member name="P:NuGet.Commands.Rules.AnalysisResources.MisplacedInitScriptSolution">
-      <summary>
-               Looks up a localized string similar to Place the file directly under 'tools' folder..
-            </summary>
-    </member>
-    <member name="P:NuGet.Commands.Rules.AnalysisResources.MisplacedInitScriptTitle">
-      <summary>
-               Looks up a localized string similar to Init.ps1 script will be ignored..
-            </summary>
-    </member>
-    <member name="P:NuGet.Commands.Rules.AnalysisResources.MisplacedTransformFileDescription">
-      <summary>
-               Looks up a localized string similar to The transform file '{0}' is outside the 'content' folder and hence will not be transformed during installation of this package..
-            </summary>
-    </member>
-    <member name="P:NuGet.Commands.Rules.AnalysisResources.MisplacedTransformFileSolution">
-      <summary>
-               Looks up a localized string similar to Move it into the 'content' folder..
-            </summary>
-    </member>
-    <member name="P:NuGet.Commands.Rules.AnalysisResources.MisplacedTransformFileTitle">
-      <summary>
-               Looks up a localized string similar to Transform file outside content folder..
-            </summary>
-    </member>
-    <member name="P:NuGet.Commands.Rules.AnalysisResources.PlaceholderFileInPackageDescription">
-      <summary>
-               Looks up a localized string similar to An empty folder placeholder file '{0}' is in a non-empty folder and should be removed..
-            </summary>
-    </member>
-    <member name="P:NuGet.Commands.Rules.AnalysisResources.PlaceholderFileInPackageSolution">
-      <summary>
-               Looks up a localized string similar to Remove the file from the project..
-            </summary>
-    </member>
-    <member name="P:NuGet.Commands.Rules.AnalysisResources.PlaceholderFileInPackageTitle">
-      <summary>
-               Looks up a localized string similar to Placeholder file in non-empty folder..
-            </summary>
-    </member>
-    <member name="P:NuGet.Commands.Rules.AnalysisResources.ScriptOutsideToolsDescription">
-      <summary>
-               Looks up a localized string similar to The script file '{0}' is outside the 'tools' folder and hence will not be executed during installation of this package..
-            </summary>
-    </member>
-    <member name="P:NuGet.Commands.Rules.AnalysisResources.ScriptOutsideToolsSolution">
-      <summary>
-               Looks up a localized string similar to Move it into the 'tools' folder..
-            </summary>
-    </member>
-    <member name="P:NuGet.Commands.Rules.AnalysisResources.ScriptOutsideToolsTitle">
-      <summary>
-               Looks up a localized string similar to PowerShell file outside tools folder..
-            </summary>
-    </member>
-    <member name="P:NuGet.Commands.Rules.AnalysisResources.UnrecognizedScriptDescription">
-      <summary>
-               Looks up a localized string similar to The script file '{0}' is not recognized by NuGet and hence will not be executed during installation of this package..
-            </summary>
-    </member>
-    <member name="P:NuGet.Commands.Rules.AnalysisResources.UnrecognizedScriptSolution">
-      <summary>
-               Looks up a localized string similar to Rename it to install.ps1, uninstall.ps1 or init.ps1 and place it directly under 'tools'..
-            </summary>
-    </member>
-    <member name="P:NuGet.Commands.Rules.AnalysisResources.UnrecognizedScriptTitle">
-      <summary>
-               Looks up a localized string similar to Unrecognized PowerShell file..
-            </summary>
-    </member>
-    <member name="P:NuGet.Commands.Rules.AnalysisResources.UnspecifiedDependencyVersion">
-      <summary>
-               Looks up a localized string similar to The version of dependency '{0}' is not specified..
-            </summary>
-    </member>
-    <member name="P:NuGet.Commands.Rules.AnalysisResources.UnspecifiedDependencyVersionSolution">
-      <summary>
-               Looks up a localized string similar to Specify the version of dependency and rebuild your package..
-            </summary>
-    </member>
-    <member name="P:NuGet.Commands.Rules.AnalysisResources.UnspecifiedDependencyVersionTitle">
-      <summary>
-               Looks up a localized string similar to Specify version of dependencies..
-            </summary>
-    </member>
-    <member name="P:NuGet.Commands.Rules.AnalysisResources.WinRTObsoleteDescription">
-      <summary>
-               Looks up a localized string similar to The file at '{0}' uses the obsolete 'WinRT' as the framework folder..
-            </summary>
-    </member>
-    <member name="P:NuGet.Commands.Rules.AnalysisResources.WinRTObsoleteSolution">
-      <summary>
-               Looks up a localized string similar to Replace 'WinRT' or 'WinRT45' with 'NetCore45'..
-            </summary>
-    </member>
-    <member name="P:NuGet.Commands.Rules.AnalysisResources.WinRTObsoleteTitle">
-      <summary>
-               Looks up a localized string similar to The framework name 'WinRT' is obsolete..
-            </summary>
-    </member>
-    <member name="T:NuGet.Commands.Rules.LegacyVersionRule">
-      <summary>
-            Warn if the version is not parsable by older nuget clients.
-            </summary>
-      <remarks>This rule should be removed once more users move to SemVer 2.0.0 capable clients.</remarks>
-    </member>
-    <member name="P:NuGet.Commands.Rules.MisplacedAssemblyRule.ValidFolders">
-      <summary>
-            Folders that are expected to have .dll and .winmd files
-            </summary>
-    </member>
-    <member name="M:NuGet.Shared.NuGet.Common477122.EqualityUtility.OrderedEquals``2(System.Collections.Generic.IEnumerable{``0},System.Collections.Generic.IEnumerable{``0},System.Func{``0,``1},System.Collections.Generic.IComparer{``1},System.Collections.Generic.IEqualityComparer{``0})">
+    <member name="M:NuGet.Shared.NuGet.Common471597.EqualityUtility.OrderedEquals``2(System.Collections.Generic.IEnumerable{``0},System.Collections.Generic.IEnumerable{``0},System.Func{``0,``1},System.Collections.Generic.IComparer{``1},System.Collections.Generic.IEqualityComparer{``0})">
       <summary>
             Compares two enumberables for equality, ordered according to the specified key and optional comparer. Handles null values gracefully.
             </summary>
@@ -3475,41 +3255,41 @@
       <param name="orderComparer">An optional comparer for comparing keys</param>
       <param name="sequenceComparer">An optional comparer for sequences</param>
     </member>
-    <member name="M:NuGet.Shared.NuGet.Common477122.EqualityUtility.SequenceEqualWithNullCheck``1(System.Collections.Generic.IEnumerable{``0},System.Collections.Generic.IEnumerable{``0},System.Collections.Generic.IEqualityComparer{``0})">
+    <member name="M:NuGet.Shared.NuGet.Common471597.EqualityUtility.SequenceEqualWithNullCheck``1(System.Collections.Generic.IEnumerable{``0},System.Collections.Generic.IEnumerable{``0},System.Collections.Generic.IEqualityComparer{``0})">
       <summary>
             Compares two sequence for equality, allowing either sequence to be null. If one is null, both have to be
             null for equality.
             </summary>
     </member>
-    <member name="M:NuGet.Shared.NuGet.Common477122.EqualityUtility.SetEqualsWithNullCheck``1(System.Collections.Generic.ISet{``0},System.Collections.Generic.ISet{``0},System.Collections.Generic.IEqualityComparer{``0})">
+    <member name="M:NuGet.Shared.NuGet.Common471597.EqualityUtility.SetEqualsWithNullCheck``1(System.Collections.Generic.ISet{``0},System.Collections.Generic.ISet{``0},System.Collections.Generic.IEqualityComparer{``0})">
       <summary>
             Compares two sets for equality, allowing either sequence to be null.
             If one is null, both have to be null for equality.
             </summary>
     </member>
-    <member name="T:NuGet.Shared.NuGet.Common477122.HashCodeCombiner">
+    <member name="T:NuGet.Shared.NuGet.Common471597.HashCodeCombiner">
       <summary>
             Hash code creator, based on the original NuGet hash code combiner/ASP hash code combiner implementations
             </summary>
     </member>
-    <member name="M:NuGet.Shared.NuGet.Common477122.HashCodeCombiner.GetHashCode``2(``0,``1)">
+    <member name="M:NuGet.Shared.NuGet.Common471597.HashCodeCombiner.GetHashCode``2(``0,``1)">
       <summary>
             Create a unique hash code for the given set of items
             </summary>
     </member>
-    <member name="M:NuGet.Shared.NuGet.Common477122.HashCodeCombiner.GetHashCode``3(``0,``1,``2)">
+    <member name="M:NuGet.Shared.NuGet.Common471597.HashCodeCombiner.GetHashCode``3(``0,``1,``2)">
       <summary>
             Create a unique hash code for the given set of items
             </summary>
     </member>
-    <member name="M:NuGet.Shared.NuGet.Common477122.Extensions.AsList``1(System.Collections.Generic.IEnumerable{``0})">
+    <member name="M:NuGet.Shared.NuGet.Common471597.Extensions.AsList``1(System.Collections.Generic.IEnumerable{``0})">
       <summary>
             Return the enumerable as a List of T, copying if required. Optimized for common case where it is an List of T.
             Avoid mutating the return value.
             </summary>
       <remarks>https://aspnetwebstack.codeplex.com/SourceControl/latest#src/Common/CollectionExtensions.cs</remarks>
     </member>
-    <member name="M:NuGet.Shared.NuGet.Common477122.Extensions.AsHashSet``1(System.Collections.Generic.ISet{``0},System.Collections.Generic.IEqualityComparer{``0})">
+    <member name="M:NuGet.Shared.NuGet.Common471597.Extensions.AsHashSet``1(System.Collections.Generic.ISet{``0},System.Collections.Generic.IEqualityComparer{``0})">
       <summary>
             Return the ISet as a HashSet of T, copying if required. Optimized for common case where it is a HashSet of T.
             Avoid mutating the return value.
@@ -3807,7 +3587,7 @@
     </member>
     <member name="T:NuGet.Common.NuGetLogCode">
       <summary>
-             This enum is used to quantify NuGet error and wanring codes. 
+             This enum is used to quantify NuGet error and warning codes. 
              Format - NUxyzw where NU is the profix indicating NuGet and xyzw is a 4 digit code
             
              Numbers - xyzw
@@ -3825,6 +3605,7 @@
              Groups:
              1000-1999 - Restore
              3000-3999 - Signing
+             5000-5999 - Packaging
             
              Sub groups for Restore:
              error/warning - Reason
@@ -3919,6 +3700,21 @@
     <member name="F:NuGet.Common.NuGetLogCode.NU1203">
       <summary>
             un-matched reference assemblies
+            </summary>
+    </member>
+    <member name="F:NuGet.Common.NuGetLogCode.NU1204">
+      <summary>
+            Invalid package types
+            </summary>
+    </member>
+    <member name="F:NuGet.Common.NuGetLogCode.NU1211">
+      <summary>
+            project has an invalid dependency count
+            </summary>
+    </member>
+    <member name="F:NuGet.Common.NuGetLogCode.NU1212">
+      <summary>
+            Incompatible tools package/project combination
             </summary>
     </member>
     <member name="F:NuGet.Common.NuGetLogCode.NU1401">
@@ -4044,7 +3840,7 @@
     </member>
     <member name="F:NuGet.Common.NuGetLogCode.NU3009">
       <summary>
-            The package signature contains multiple primary signatures.
+            The package signature file does not contain exactly one primary signature.
             </summary>
     </member>
     <member name="F:NuGet.Common.NuGetLogCode.NU3010">
@@ -4152,6 +3948,31 @@
             The timestamp's message imprint uses an unsupported hash algorithm.
             </summary>
     </member>
+    <member name="F:NuGet.Common.NuGetLogCode.NU3031">
+      <summary>
+            The repository countersignature is invalid.
+            </summary>
+    </member>
+    <member name="F:NuGet.Common.NuGetLogCode.NU3032">
+      <summary>
+            The package signature contains multiple repository countersignatures.
+            </summary>
+    </member>
+    <member name="F:NuGet.Common.NuGetLogCode.NU3033">
+      <summary>
+            A repository primary signature must not have a repository countersignature.
+            </summary>
+    </member>
+    <member name="F:NuGet.Common.NuGetLogCode.NU3034">
+      <summary>
+            The package signature certificate does not match the trusted certificate list.
+            </summary>
+    </member>
+    <member name="F:NuGet.Common.NuGetLogCode.NU3035">
+      <summary>
+            Chain building failed for the repository countersignature.
+            </summary>
+    </member>
     <member name="F:NuGet.Common.NuGetLogCode.NU5000">
       <summary>
             Undefined Package Error.
@@ -4197,12 +4018,232 @@
             ErrorManifestFileNotFound
             </summary>
     </member>
+    <member name="F:NuGet.Common.NuGetLogCode.NU5009">
+      <summary>
+            Error_CannotFindMsbuild
+            </summary>
+    </member>
+    <member name="F:NuGet.Common.NuGetLogCode.NU5010">
+      <summary>
+            Error_InvalidVersionInPackage
+            </summary>
+    </member>
+    <member name="F:NuGet.Common.NuGetLogCode.NU5011">
+      <summary>
+            Error_UnableToExtractAssemblyMetadata
+            </summary>
+    </member>
+    <member name="F:NuGet.Common.NuGetLogCode.NU5012">
+      <summary>
+            Error_UnableToFindBuildOutput
+            </summary>
+    </member>
+    <member name="F:NuGet.Common.NuGetLogCode.NU5013">
+      <summary>
+            Error_FailedToBuildProject
+            </summary>
+    </member>
+    <member name="F:NuGet.Common.NuGetLogCode.NU5014">
+      <summary>
+            Error_ProcessingNuspecFile
+            </summary>
+    </member>
+    <member name="F:NuGet.Common.NuGetLogCode.NU5015">
+      <summary>
+            Error_MultipleTargetFrameworks
+            </summary>
+    </member>
+    <member name="F:NuGet.Common.NuGetLogCode.NU5016">
+      <summary>
+            Error_InvalidDependencyVersionConstraints
+            </summary>
+    </member>
+    <member name="F:NuGet.Common.NuGetLogCode.NU5017">
+      <summary>
+            Error_CannotCreateEmptyPackage
+            </summary>
+    </member>
+    <member name="F:NuGet.Common.NuGetLogCode.NU5018">
+      <summary>
+            Error_Manifest_InvalidReference
+            </summary>
+    </member>
+    <member name="F:NuGet.Common.NuGetLogCode.NU5019">
+      <summary>
+            Error_PackageAuthoring_FileNotFound
+            </summary>
+    </member>
+    <member name="F:NuGet.Common.NuGetLogCode.NU5020">
+      <summary>
+            Error_EmptySourceFilePath
+            </summary>
+    </member>
+    <member name="F:NuGet.Common.NuGetLogCode.NU5021">
+      <summary>
+            Error_EmptySourceFileProjectDirectory
+            </summary>
+    </member>
+    <member name="F:NuGet.Common.NuGetLogCode.NU5022">
+      <summary>
+            Error_InvalidMinClientVersion
+            </summary>
+    </member>
+    <member name="F:NuGet.Common.NuGetLogCode.NU5023">
+      <summary>
+            Error_AssetsFileNotFound
+            </summary>
+    </member>
+    <member name="F:NuGet.Common.NuGetLogCode.NU5024">
+      <summary>
+            Error_InvalidPackageVersion
+            </summary>
+    </member>
+    <member name="F:NuGet.Common.NuGetLogCode.NU5025">
+      <summary>
+            Error_AssetsFileDoesNotHaveValidPackageSpec
+            </summary>
+    </member>
+    <member name="F:NuGet.Common.NuGetLogCode.NU5026">
+      <summary>
+            Error_FileNotFound
+            </summary>
+    </member>
+    <member name="F:NuGet.Common.NuGetLogCode.NU5027">
+      <summary>
+            Error_InvalidTargetFramework
+            </summary>
+    </member>
+    <member name="F:NuGet.Common.NuGetLogCode.NU5028">
+      <summary>
+            Error_NoPackItemProvided
+            </summary>
+    </member>
+    <member name="F:NuGet.Common.NuGetLogCode.NU5029">
+      <summary>
+            Error_InvalidNuspecProperties
+            </summary>
+    </member>
+    <member name="F:NuGet.Common.NuGetLogCode.NU5100">
+      <summary>
+            AssemblyOutsideLibWarning
+            </summary>
+    </member>
+    <member name="F:NuGet.Common.NuGetLogCode.NU5101">
+      <summary>
+            AssemblyDirectlyUnderLibWarning
+            </summary>
+    </member>
+    <member name="F:NuGet.Common.NuGetLogCode.NU5102">
+      <summary>
+            DefaultSpecValueWarning
+            </summary>
+    </member>
+    <member name="F:NuGet.Common.NuGetLogCode.NU5103">
+      <summary>
+            InvalidFrameworkWarning
+            </summary>
+    </member>
+    <member name="F:NuGet.Common.NuGetLogCode.NU5104">
+      <summary>
+            InvalidPrereleaseDependencyWarning
+            </summary>
+    </member>
+    <member name="F:NuGet.Common.NuGetLogCode.NU5105">
+      <summary>
+            LegacyVersionWarning
+            </summary>
+    </member>
+    <member name="F:NuGet.Common.NuGetLogCode.NU5106">
+      <summary>
+            WinRTObsoleteWarning
+            </summary>
+    </member>
+    <member name="F:NuGet.Common.NuGetLogCode.NU5107">
+      <summary>
+            MisplacedInitScriptWarning
+            </summary>
+    </member>
+    <member name="F:NuGet.Common.NuGetLogCode.NU5108">
+      <summary>
+            MisplacedTransformFileWarning
+            </summary>
+    </member>
+    <member name="F:NuGet.Common.NuGetLogCode.NU5109">
+      <summary>
+            PlaceholderFileInPackageWarning
+            </summary>
+    </member>
+    <member name="F:NuGet.Common.NuGetLogCode.NU5110">
+      <summary>
+            ScriptOutsideToolsWarning
+            </summary>
+    </member>
+    <member name="F:NuGet.Common.NuGetLogCode.NU5111">
+      <summary>
+            UnrecognizedScriptWarning
+            </summary>
+    </member>
+    <member name="F:NuGet.Common.NuGetLogCode.NU5112">
+      <summary>
+            UnspecifiedDependencyVersionWarning
+            </summary>
+    </member>
+    <member name="F:NuGet.Common.NuGetLogCode.NU5113">
+      <summary>
+            Warning_SemanticVersion
+            </summary>
+    </member>
+    <member name="F:NuGet.Common.NuGetLogCode.NU5114">
+      <summary>
+            Warning_DuplicatePropertyKey
+            </summary>
+    </member>
+    <member name="F:NuGet.Common.NuGetLogCode.NU5115">
+      <summary>
+            Warning_UnspecifiedField
+            </summary>
+    </member>
+    <member name="F:NuGet.Common.NuGetLogCode.NU5116">
+      <summary>
+            Warning_FileDoesNotExist
+            </summary>
+    </member>
+    <member name="F:NuGet.Common.NuGetLogCode.NU5117">
+      <summary>
+            Warning_UnresolvedFilePath
+            </summary>
+    </member>
+    <member name="F:NuGet.Common.NuGetLogCode.NU5118">
+      <summary>
+            Warning_FileNotAddedToPackage
+            </summary>
+    </member>
+    <member name="F:NuGet.Common.NuGetLogCode.NU5119">
+      <summary>
+            Warning_FileExcludedByDefault
+            </summary>
+    </member>
+    <member name="F:NuGet.Common.NuGetLogCode.NU5120">
+      <summary>
+            Migrator_PackageHasInstallScript
+            </summary>
+    </member>
+    <member name="F:NuGet.Common.NuGetLogCode.NU5121">
+      <summary>
+            Migrator_PackageHasContentFolder
+            </summary>
+    </member>
+    <member name="F:NuGet.Common.NuGetLogCode.NU5122">
+      <summary>
+            Migrator_XdtTransformInPackage
+            </summary>
+    </member>
     <member name="F:NuGet.Common.NuGetLogCode.NU5500">
       <summary>
             Undefined package warning
             </summary>
     </member>
-    <member name="M:NuGet.Common.PackLogMessage.#ctor(NuGet.Common.LogLevel,NuGet.Common.NuGetLogCode,System.String)">
+    <member name="M:NuGet.Common.PackagingLogMessage.#ctor(NuGet.Common.LogLevel,NuGet.Common.NuGetLogCode,System.String)">
       <summary>
             Initializes a new instance of the PackLogMessage class
             </summary>
@@ -4210,14 +4251,14 @@
       <param name="logCode">The NuGet log code</param>
       <param name="message">The log message</param>
     </member>
-    <member name="M:NuGet.Common.PackLogMessage.CreateError(NuGet.Common.NuGetLogCode,System.String)">
+    <member name="M:NuGet.Common.PackagingLogMessage.CreateError(System.String,NuGet.Common.NuGetLogCode)">
       <summary>
             Create an error log message.
             </summary>
       <param name="code">The logging code</param>
       <param name="message">The log message</param>
     </member>
-    <member name="M:NuGet.Common.PackLogMessage.GetDefaultLogCode(NuGet.Common.LogLevel)">
+    <member name="M:NuGet.Common.PackagingLogMessage.GetDefaultLogCode(NuGet.Common.LogLevel)">
       <summary>
             Get default LogCode based on the log level
             </summary>
@@ -4343,6 +4384,44 @@
       <param name="code">NuGetLogCode to be formatted into string.</param>
       <param name="codeString">strings representation of the NuGetLogCode if the result is true else null.</param>
       <returns>bool indcating if the GetName operation was successfull or not.</returns>
+    </member>
+    <member name="M:NuGet.Common.MSBuildStringUtility.Split(System.String)">
+      <summary>
+            Split on ; and trim. Null or empty inputs will return an
+            empty array.
+            </summary>
+    </member>
+    <member name="M:NuGet.Common.MSBuildStringUtility.Split(System.String,System.Char[])">
+      <summary>
+            Split on ; and trim. Null or empty inputs will return an
+            empty array.
+            </summary>
+    </member>
+    <member name="M:NuGet.Common.MSBuildStringUtility.TrimAndGetNullForEmpty(System.String)">
+      <summary>
+            Trims the provided string and converts empty strings to null.
+            </summary>
+    </member>
+    <member name="M:NuGet.Common.MSBuildStringUtility.TrimAndExcludeNullOrEmpty(System.String[])">
+      <summary>
+            Trims the provided strings and excludes empty or null strings.
+            </summary>
+    </member>
+    <member name="M:NuGet.Common.MSBuildStringUtility.IsTrue(System.String)">
+      <summary>
+            True if the property is set to true
+            </summary>
+    </member>
+    <member name="M:NuGet.Common.MSBuildStringUtility.IsTrueOrEmpty(System.String)">
+      <summary>
+            True if the property is set to true or empty.
+            </summary>
+    </member>
+    <member name="M:NuGet.Common.MSBuildStringUtility.GetNuGetLogCodes(System.String)">
+      <summary>
+            Splits and parses a ; or , delimited list of log codes.
+            Ignores codes that are unknown.
+            </summary>
     </member>
     <member name="M:NuGet.Common.NetworkProtocolUtility.ConfigureSupportedSslProtocols">
       <summary>
@@ -4790,7 +4869,7 @@
       <param name="path">Source path.</param>
       <returns>The absolute source path or the original source. Noops for non-file paths.</returns>
     </member>
-    <member name="M:NuGet.Shared.NuGet.Configuration510544.EqualityUtility.OrderedEquals``2(System.Collections.Generic.IEnumerable{``0},System.Collections.Generic.IEnumerable{``0},System.Func{``0,``1},System.Collections.Generic.IComparer{``1},System.Collections.Generic.IEqualityComparer{``0})">
+    <member name="M:NuGet.Shared.NuGet.Configuration507365.EqualityUtility.OrderedEquals``2(System.Collections.Generic.IEnumerable{``0},System.Collections.Generic.IEnumerable{``0},System.Func{``0,``1},System.Collections.Generic.IComparer{``1},System.Collections.Generic.IEqualityComparer{``0})">
       <summary>
             Compares two enumberables for equality, ordered according to the specified key and optional comparer. Handles null values gracefully.
             </summary>
@@ -4802,41 +4881,41 @@
       <param name="orderComparer">An optional comparer for comparing keys</param>
       <param name="sequenceComparer">An optional comparer for sequences</param>
     </member>
-    <member name="M:NuGet.Shared.NuGet.Configuration510544.EqualityUtility.SequenceEqualWithNullCheck``1(System.Collections.Generic.IEnumerable{``0},System.Collections.Generic.IEnumerable{``0},System.Collections.Generic.IEqualityComparer{``0})">
+    <member name="M:NuGet.Shared.NuGet.Configuration507365.EqualityUtility.SequenceEqualWithNullCheck``1(System.Collections.Generic.IEnumerable{``0},System.Collections.Generic.IEnumerable{``0},System.Collections.Generic.IEqualityComparer{``0})">
       <summary>
             Compares two sequence for equality, allowing either sequence to be null. If one is null, both have to be
             null for equality.
             </summary>
     </member>
-    <member name="M:NuGet.Shared.NuGet.Configuration510544.EqualityUtility.SetEqualsWithNullCheck``1(System.Collections.Generic.ISet{``0},System.Collections.Generic.ISet{``0},System.Collections.Generic.IEqualityComparer{``0})">
+    <member name="M:NuGet.Shared.NuGet.Configuration507365.EqualityUtility.SetEqualsWithNullCheck``1(System.Collections.Generic.ISet{``0},System.Collections.Generic.ISet{``0},System.Collections.Generic.IEqualityComparer{``0})">
       <summary>
             Compares two sets for equality, allowing either sequence to be null.
             If one is null, both have to be null for equality.
             </summary>
     </member>
-    <member name="T:NuGet.Shared.NuGet.Configuration510544.HashCodeCombiner">
+    <member name="T:NuGet.Shared.NuGet.Configuration507365.HashCodeCombiner">
       <summary>
             Hash code creator, based on the original NuGet hash code combiner/ASP hash code combiner implementations
             </summary>
     </member>
-    <member name="M:NuGet.Shared.NuGet.Configuration510544.HashCodeCombiner.GetHashCode``2(``0,``1)">
+    <member name="M:NuGet.Shared.NuGet.Configuration507365.HashCodeCombiner.GetHashCode``2(``0,``1)">
       <summary>
             Create a unique hash code for the given set of items
             </summary>
     </member>
-    <member name="M:NuGet.Shared.NuGet.Configuration510544.HashCodeCombiner.GetHashCode``3(``0,``1,``2)">
+    <member name="M:NuGet.Shared.NuGet.Configuration507365.HashCodeCombiner.GetHashCode``3(``0,``1,``2)">
       <summary>
             Create a unique hash code for the given set of items
             </summary>
     </member>
-    <member name="M:NuGet.Shared.NuGet.Configuration510544.Extensions.AsList``1(System.Collections.Generic.IEnumerable{``0})">
+    <member name="M:NuGet.Shared.NuGet.Configuration507365.Extensions.AsList``1(System.Collections.Generic.IEnumerable{``0})">
       <summary>
             Return the enumerable as a List of T, copying if required. Optimized for common case where it is an List of T.
             Avoid mutating the return value.
             </summary>
       <remarks>https://aspnetwebstack.codeplex.com/SourceControl/latest#src/Common/CollectionExtensions.cs</remarks>
     </member>
-    <member name="M:NuGet.Shared.NuGet.Configuration510544.Extensions.AsHashSet``1(System.Collections.Generic.ISet{``0},System.Collections.Generic.IEqualityComparer{``0})">
+    <member name="M:NuGet.Shared.NuGet.Configuration507365.Extensions.AsHashSet``1(System.Collections.Generic.ISet{``0},System.Collections.Generic.IEqualityComparer{``0})">
       <summary>
             Return the ISet as a HashSet of T, copying if required. Optimized for common case where it is a HashSet of T.
             Avoid mutating the return value.
@@ -4949,6 +5028,11 @@
     <member name="P:NuGet.Configuration.PackageSource.Origin">
       <summary>
             Gets the <see cref="T:NuGet.Configuration.ISettings" /> that this source originated from. May be null.
+            </summary>
+    </member>
+    <member name="P:NuGet.Configuration.PackageSource.TrustedSource">
+      <summary>
+            Corresponding trusted source details. Null if the package source does not have trusted sources information.
             </summary>
     </member>
     <member name="T:NuGet.Configuration.PackageSourceCredential">
@@ -5195,6 +5279,13 @@
             Otherwise, path relative to ISettings.Root is returned
             </summary>
     </member>
+    <member name="M:NuGet.Configuration.ISettings.GetAllSubsections(System.String)">
+      <summary>
+            Gets all subsection element names under section as a List of string.
+            </summary>
+      <param name="section">Name of the section.</param>
+      <returns>List of string containing subsection element names.</returns>
+    </member>
     <member name="M:NuGet.Configuration.ISettings.GetSettingValues(System.String,System.Boolean)">
       <summary>
             Gets all the values under section
@@ -5202,8 +5293,21 @@
     </member>
     <member name="M:NuGet.Configuration.ISettings.GetNestedValues(System.String,System.String)">
       <summary>
-            Gets all the values under section
+            Gets all the values under section as List of KeyValuePair
             </summary>
+    </member>
+    <member name="M:NuGet.Configuration.ISettings.GetNestedSettingValues(System.String,System.String)">
+      <summary>
+            Gets all the values under section as List of SettingValue
+            </summary>
+    </member>
+    <member name="M:NuGet.Configuration.ISettings.SetValue(System.String,System.String,System.String)">
+      <summary>
+            Sets the value under the specified <paramref name="section" />.
+            </summary>
+      <param name="section">The name of the section.</param>
+      <param name="key">The key to set set.</param>
+      <param name="value">The value to set.</param>
     </member>
     <member name="M:NuGet.Configuration.ISettings.SetValues(System.String,System.Collections.Generic.IReadOnlyList{NuGet.Configuration.SettingValue})">
       <summary>
@@ -5219,6 +5323,46 @@
             </summary>
       <param name="section">The name of the section.</param>
       <param name="values">The values to set.</param>
+    </member>
+    <member name="M:NuGet.Configuration.ISettings.UpdateSubsections(System.String,System.String,System.Collections.Generic.IReadOnlyList{NuGet.Configuration.SettingValue})">
+      <summary>
+            Updates nested <paramref name="values" /> across multiple <see cref="T:NuGet.Configuration.ISettings" /> instances in the hierarchy.
+            Values are updated in the <see cref="T:NuGet.Configuration.ISettings" /> with the nearest priority.
+            </summary>
+      <param name="section">The name of the section.</param>
+      <param name="subsection">The name of the subsection.</param>
+      <param name="values">The values to set.</param>
+    </member>
+    <member name="M:NuGet.Configuration.ISettings.SetNestedValues(System.String,System.String,System.Collections.Generic.IList{System.Collections.Generic.KeyValuePair{System.String,System.String}})">
+      <summary>
+            Sets the values under the specified <paramref name="section" /> and <paramref name="subsection" />.
+            </summary>
+      <param name="section">The name of the section.</param>
+      <param name="subsection">The name of the subsection.</param>
+      <param name="values">The values to set.</param>
+    </member>
+    <member name="M:NuGet.Configuration.ISettings.SetNestedSettingValues(System.String,System.String,System.Collections.Generic.IList{NuGet.Configuration.SettingValue})">
+      <summary>
+            Sets the setting values under the specified <paramref name="section" /> and <paramref name="subsection" />.
+            </summary>
+      <param name="section">The name of the section.</param>
+      <param name="subsection">The name of the subsection.</param>
+      <param name="values">The setting values to set.</param>
+    </member>
+    <member name="M:NuGet.Configuration.ISettings.DeleteValue(System.String,System.String)">
+      <summary>
+            Deletes a key from the specified <paramref name="section" />.
+            </summary>
+      <param name="section">The name of the section.</param>
+      <param name="key">The key to be delted.</param>
+      <returns>bool indicating success.</returns>
+    </member>
+    <member name="M:NuGet.Configuration.ISettings.DeleteSection(System.String)">
+      <summary>
+            Deletes the specified <paramref name="section" />.
+            </summary>
+      <param name="section">The name of the section.</param>
+      <returns>bool indicating success.</returns>
     </member>
     <member name="P:NuGet.Configuration.ISettings.Root">
       <summary>
@@ -5352,6 +5496,41 @@
       <param name="paths">The additional paths under which to look for settings files.</param>
       <returns>The list of settings read.</returns>
     </member>
+    <member name="M:NuGet.Configuration.Settings.UpdateSection(System.Xml.Linq.XElement,System.String,System.Collections.Generic.IEnumerable{NuGet.Configuration.SettingValue})">
+      <summary>
+            Adds or Updates a section in the root element with the values.
+            </summary>
+      <param name="root">Root element.</param>
+      <param name="section">Name of the section.</param>
+      <param name="valuesToWrite">Values to be added or updated in the section.</param>
+    </member>
+    <member name="M:NuGet.Configuration.Settings.RemoveElementBeforeClearTag(System.Xml.Linq.XElement)">
+      <summary>
+            Removes all element nodes in the sectionElement which appear before a clear element.
+            </summary>
+      <param name="sectionElement">XElement section.</param>
+    </member>
+    <member name="M:NuGet.Configuration.Settings.ContainsClearTag(System.Xml.Linq.XElement)">
+      <summary>
+            Checks if a section contains clear tag.
+            </summary>
+      <param name="section">XElement section.</param>
+    </member>
+    <member name="M:NuGet.Configuration.Settings.IsElement(System.Xml.Linq.XNode)">
+      <summary>
+            Checks if an XNode is an XElement.
+            </summary>
+      <param name="node">XNode</param>
+      <returns>Bool indicating if the node is an element.</returns>
+    </member>
+    <member name="M:NuGet.Configuration.Settings.HasName(System.Xml.Linq.XElement,System.String)">
+      <summary>
+            Checks if an XElement has a specific local name. Performs an OrdinalIgnoreCase comparison.
+            </summary>
+      <param name="element">XElement to be matched</param>
+      <param name="name">name to be matched</param>
+      <returns>Bool indicating if the element and has the same local name as the name parameter.</returns>
+    </member>
     <member name="M:NuGet.Configuration.Settings.GetSettingsFileNames(System.String)">
       <remarks>
             Order is most significant (e.g. applied last) to least significant (applied first)
@@ -5395,22 +5574,26 @@
     </member>
     <member name="P:NuGet.Configuration.SettingValue.OriginalValue">
       <summary>
-            original value of the source as in NuGet.Config
+            Original value of the source as in NuGet.Config.
+            Should be used only if the SettingValue is read from a config file.
             </summary>
     </member>
     <member name="P:NuGet.Configuration.SettingValue.IsMachineWide">
       <summary>
-            IsMachineWide tells if the setting is machine-wide or not
+            IsMachineWide tells if the setting is machine-wide or not.
+            Should be used only if the SettingValue is read from a config file.
             </summary>
     </member>
     <member name="P:NuGet.Configuration.SettingValue.Priority">
       <summary>
-            The priority of this setting in the nuget.config hierarchy. Bigger number means higher priority
+            The priority of this setting in the nuget.config hierarchy. Bigger number means higher priority.
+            Should be used only if the SettingValue is read from a config file.
             </summary>
     </member>
     <member name="P:NuGet.Configuration.SettingValue.Origin">
       <summary>
             Gets the <see cref="T:NuGet.Configuration.ISettings" /> that provided this value.
+            Should be used only if the SettingValue is read from a config file.
             </summary>
     </member>
     <member name="P:NuGet.Configuration.SettingValue.AdditionalData">
@@ -5425,6 +5608,90 @@
     <member name="T:NuGet.Configuration.XPlatMachineWideSetting">
       <summary>
             Machine wide settings based on the default machine wide config directory.
+            </summary>
+    </member>
+    <member name="P:NuGet.Configuration.CertificateTrustEntry.Fingerprint">
+      <summary>
+            Certificate fingerprint.
+            </summary>
+    </member>
+    <member name="P:NuGet.Configuration.CertificateTrustEntry.SubjectName">
+      <summary>
+            Certificate subject name.
+            </summary>
+    </member>
+    <member name="P:NuGet.Configuration.CertificateTrustEntry.FingerprintAlgorithm">
+      <summary>
+            Hash algorithm used to generate the certificate fingerprint.
+            </summary>
+    </member>
+    <member name="P:NuGet.Configuration.CertificateTrustEntry.Priority">
+      <summary>
+            The priority of this certificate entry in the nuget.config hierarchy. Same as SettingValue.Priority.
+            Null if this entry is not read from a config file.
+            </summary>
+    </member>
+    <member name="M:NuGet.Configuration.ITrustedSourceProvider.LoadTrustedSources">
+      <summary>
+            Loads all trusted sources.
+            </summary>
+      <returns>IEnumerable of TrustedSource.</returns>
+    </member>
+    <member name="M:NuGet.Configuration.ITrustedSourceProvider.LoadTrustedSource(System.String)">
+      <summary>
+            Loads a trusted source corresponding to a package source.
+            </summary>
+      <param name="packageSourceName">Name of the PackageSource used for lookup.</param>
+      <returns>TrustedSource corresponding to the PackageSource. Null if none found.</returns>
+    </member>
+    <member name="M:NuGet.Configuration.ITrustedSourceProvider.SaveTrustedSources(System.Collections.Generic.IEnumerable{NuGet.Configuration.TrustedSource})">
+      <summary>
+            Saves all trusted sources. Creates new entries or updates existing trusted source entries.
+            </summary>
+      <param name="sources">IEnumerable of TrustedSource to be saved.</param>
+    </member>
+    <member name="M:NuGet.Configuration.ITrustedSourceProvider.SaveTrustedSource(NuGet.Configuration.TrustedSource)">
+      <summary>
+            Saves a trusted sources. Creates new entry or updates existing trusted source entry.
+            </summary>
+      <param name="source">TrustedSource to be saved.</param>
+    </member>
+    <member name="M:NuGet.Configuration.ITrustedSourceProvider.DeleteTrustedSource(System.String)">
+      <summary>
+            Deletes a trusted source.
+            </summary>
+      <param name="sourceName">Name of the TrustedSource to be deleted.</param>
+    </member>
+    <member name="P:NuGet.Configuration.ITrustEntry.Priority">
+      <summary>
+            The priority of this entry in the nuget.config hierarchy. Same as SettingValue.Priority.
+            Null if this entry is not read from a config file.
+            </summary>
+    </member>
+    <member name="P:NuGet.Configuration.ServiceIndexTrustEntry.Value">
+      <summary>
+            Service index uri.
+            </summary>
+    </member>
+    <member name="P:NuGet.Configuration.ServiceIndexTrustEntry.Priority">
+      <summary>
+            The priority of this entry in the nuget.config hierarchy. Same as SettingValue.Priority.
+            Null if this entry is not read from a config file.
+            </summary>
+    </member>
+    <member name="P:NuGet.Configuration.TrustedSource.SourceName">
+      <summary>
+            Name of the associated package source.
+            </summary>
+    </member>
+    <member name="P:NuGet.Configuration.TrustedSource.ServiceIndex">
+      <summary>
+            Service index of the source.
+            </summary>
+    </member>
+    <member name="P:NuGet.Configuration.TrustedSource.Certificates">
+      <summary>
+            List of trusted certificates.
             </summary>
     </member>
     <member name="T:NuGet.Configuration.IExtensionLocator">
@@ -5498,7 +5765,7 @@
             Throw if a path is relative.
             </summary>
     </member>
-    <member name="M:NuGet.Shared.NuGet.DependencyResolver.Core538951.EqualityUtility.OrderedEquals``2(System.Collections.Generic.IEnumerable{``0},System.Collections.Generic.IEnumerable{``0},System.Func{``0,``1},System.Collections.Generic.IComparer{``1},System.Collections.Generic.IEqualityComparer{``0})">
+    <member name="M:NuGet.Shared.NuGet.DependencyResolver.Core551735.EqualityUtility.OrderedEquals``2(System.Collections.Generic.IEnumerable{``0},System.Collections.Generic.IEnumerable{``0},System.Func{``0,``1},System.Collections.Generic.IComparer{``1},System.Collections.Generic.IEqualityComparer{``0})">
       <summary>
             Compares two enumberables for equality, ordered according to the specified key and optional comparer. Handles null values gracefully.
             </summary>
@@ -5510,41 +5777,41 @@
       <param name="orderComparer">An optional comparer for comparing keys</param>
       <param name="sequenceComparer">An optional comparer for sequences</param>
     </member>
-    <member name="M:NuGet.Shared.NuGet.DependencyResolver.Core538951.EqualityUtility.SequenceEqualWithNullCheck``1(System.Collections.Generic.IEnumerable{``0},System.Collections.Generic.IEnumerable{``0},System.Collections.Generic.IEqualityComparer{``0})">
+    <member name="M:NuGet.Shared.NuGet.DependencyResolver.Core551735.EqualityUtility.SequenceEqualWithNullCheck``1(System.Collections.Generic.IEnumerable{``0},System.Collections.Generic.IEnumerable{``0},System.Collections.Generic.IEqualityComparer{``0})">
       <summary>
             Compares two sequence for equality, allowing either sequence to be null. If one is null, both have to be
             null for equality.
             </summary>
     </member>
-    <member name="M:NuGet.Shared.NuGet.DependencyResolver.Core538951.EqualityUtility.SetEqualsWithNullCheck``1(System.Collections.Generic.ISet{``0},System.Collections.Generic.ISet{``0},System.Collections.Generic.IEqualityComparer{``0})">
+    <member name="M:NuGet.Shared.NuGet.DependencyResolver.Core551735.EqualityUtility.SetEqualsWithNullCheck``1(System.Collections.Generic.ISet{``0},System.Collections.Generic.ISet{``0},System.Collections.Generic.IEqualityComparer{``0})">
       <summary>
             Compares two sets for equality, allowing either sequence to be null.
             If one is null, both have to be null for equality.
             </summary>
     </member>
-    <member name="T:NuGet.Shared.NuGet.DependencyResolver.Core538951.HashCodeCombiner">
+    <member name="T:NuGet.Shared.NuGet.DependencyResolver.Core551735.HashCodeCombiner">
       <summary>
             Hash code creator, based on the original NuGet hash code combiner/ASP hash code combiner implementations
             </summary>
     </member>
-    <member name="M:NuGet.Shared.NuGet.DependencyResolver.Core538951.HashCodeCombiner.GetHashCode``2(``0,``1)">
+    <member name="M:NuGet.Shared.NuGet.DependencyResolver.Core551735.HashCodeCombiner.GetHashCode``2(``0,``1)">
       <summary>
             Create a unique hash code for the given set of items
             </summary>
     </member>
-    <member name="M:NuGet.Shared.NuGet.DependencyResolver.Core538951.HashCodeCombiner.GetHashCode``3(``0,``1,``2)">
+    <member name="M:NuGet.Shared.NuGet.DependencyResolver.Core551735.HashCodeCombiner.GetHashCode``3(``0,``1,``2)">
       <summary>
             Create a unique hash code for the given set of items
             </summary>
     </member>
-    <member name="M:NuGet.Shared.NuGet.DependencyResolver.Core538951.Extensions.AsList``1(System.Collections.Generic.IEnumerable{``0})">
+    <member name="M:NuGet.Shared.NuGet.DependencyResolver.Core551735.Extensions.AsList``1(System.Collections.Generic.IEnumerable{``0})">
       <summary>
             Return the enumerable as a List of T, copying if required. Optimized for common case where it is an List of T.
             Avoid mutating the return value.
             </summary>
       <remarks>https://aspnetwebstack.codeplex.com/SourceControl/latest#src/Common/CollectionExtensions.cs</remarks>
     </member>
-    <member name="M:NuGet.Shared.NuGet.DependencyResolver.Core538951.Extensions.AsHashSet``1(System.Collections.Generic.ISet{``0},System.Collections.Generic.IEqualityComparer{``0})">
+    <member name="M:NuGet.Shared.NuGet.DependencyResolver.Core551735.Extensions.AsHashSet``1(System.Collections.Generic.ISet{``0},System.Collections.Generic.IEqualityComparer{``0})">
       <summary>
             Return the ISet as a HashSet of T, copying if required. Optimized for common case where it is a HashSet of T.
             Avoid mutating the return value.
@@ -5838,7 +6105,7 @@
               Looks up a localized string similar to The feed '{0}' lists package '{1}' but multiple attempts to download the nupkg have failed. The feed is either invalid or required packages were removed while the current operation was in progress. Verify the package exists on the feed and try again..
             </summary>
     </member>
-    <member name="M:NuGet.Shared.NuGet.Frameworks560422.EqualityUtility.OrderedEquals``2(System.Collections.Generic.IEnumerable{``0},System.Collections.Generic.IEnumerable{``0},System.Func{``0,``1},System.Collections.Generic.IComparer{``1},System.Collections.Generic.IEqualityComparer{``0})">
+    <member name="M:NuGet.Shared.NuGet.Frameworks573206.EqualityUtility.OrderedEquals``2(System.Collections.Generic.IEnumerable{``0},System.Collections.Generic.IEnumerable{``0},System.Func{``0,``1},System.Collections.Generic.IComparer{``1},System.Collections.Generic.IEqualityComparer{``0})">
       <summary>
             Compares two enumberables for equality, ordered according to the specified key and optional comparer. Handles null values gracefully.
             </summary>
@@ -5850,41 +6117,41 @@
       <param name="orderComparer">An optional comparer for comparing keys</param>
       <param name="sequenceComparer">An optional comparer for sequences</param>
     </member>
-    <member name="M:NuGet.Shared.NuGet.Frameworks560422.EqualityUtility.SequenceEqualWithNullCheck``1(System.Collections.Generic.IEnumerable{``0},System.Collections.Generic.IEnumerable{``0},System.Collections.Generic.IEqualityComparer{``0})">
+    <member name="M:NuGet.Shared.NuGet.Frameworks573206.EqualityUtility.SequenceEqualWithNullCheck``1(System.Collections.Generic.IEnumerable{``0},System.Collections.Generic.IEnumerable{``0},System.Collections.Generic.IEqualityComparer{``0})">
       <summary>
             Compares two sequence for equality, allowing either sequence to be null. If one is null, both have to be
             null for equality.
             </summary>
     </member>
-    <member name="M:NuGet.Shared.NuGet.Frameworks560422.EqualityUtility.SetEqualsWithNullCheck``1(System.Collections.Generic.ISet{``0},System.Collections.Generic.ISet{``0},System.Collections.Generic.IEqualityComparer{``0})">
+    <member name="M:NuGet.Shared.NuGet.Frameworks573206.EqualityUtility.SetEqualsWithNullCheck``1(System.Collections.Generic.ISet{``0},System.Collections.Generic.ISet{``0},System.Collections.Generic.IEqualityComparer{``0})">
       <summary>
             Compares two sets for equality, allowing either sequence to be null.
             If one is null, both have to be null for equality.
             </summary>
     </member>
-    <member name="T:NuGet.Shared.NuGet.Frameworks560422.HashCodeCombiner">
+    <member name="T:NuGet.Shared.NuGet.Frameworks573206.HashCodeCombiner">
       <summary>
             Hash code creator, based on the original NuGet hash code combiner/ASP hash code combiner implementations
             </summary>
     </member>
-    <member name="M:NuGet.Shared.NuGet.Frameworks560422.HashCodeCombiner.GetHashCode``2(``0,``1)">
+    <member name="M:NuGet.Shared.NuGet.Frameworks573206.HashCodeCombiner.GetHashCode``2(``0,``1)">
       <summary>
             Create a unique hash code for the given set of items
             </summary>
     </member>
-    <member name="M:NuGet.Shared.NuGet.Frameworks560422.HashCodeCombiner.GetHashCode``3(``0,``1,``2)">
+    <member name="M:NuGet.Shared.NuGet.Frameworks573206.HashCodeCombiner.GetHashCode``3(``0,``1,``2)">
       <summary>
             Create a unique hash code for the given set of items
             </summary>
     </member>
-    <member name="M:NuGet.Shared.NuGet.Frameworks560422.Extensions.AsList``1(System.Collections.Generic.IEnumerable{``0})">
+    <member name="M:NuGet.Shared.NuGet.Frameworks573206.Extensions.AsList``1(System.Collections.Generic.IEnumerable{``0})">
       <summary>
             Return the enumerable as a List of T, copying if required. Optimized for common case where it is an List of T.
             Avoid mutating the return value.
             </summary>
       <remarks>https://aspnetwebstack.codeplex.com/SourceControl/latest#src/Common/CollectionExtensions.cs</remarks>
     </member>
-    <member name="M:NuGet.Shared.NuGet.Frameworks560422.Extensions.AsHashSet``1(System.Collections.Generic.ISet{``0},System.Collections.Generic.IEqualityComparer{``0})">
+    <member name="M:NuGet.Shared.NuGet.Frameworks573206.Extensions.AsHashSet``1(System.Collections.Generic.ISet{``0},System.Collections.Generic.IEqualityComparer{``0})">
       <summary>
             Return the ISet as a HashSet of T, copying if required. Optimized for common case where it is a HashSet of T.
             Avoid mutating the return value.
@@ -6693,7 +6960,7 @@
               Looks up a localized string similar to Invalid portable frameworks for '{0}'. A portable framework must have at least one framework in the profile..
             </summary>
     </member>
-    <member name="M:NuGet.Shared.NuGet.LibraryModel596632.EqualityUtility.OrderedEquals``2(System.Collections.Generic.IEnumerable{``0},System.Collections.Generic.IEnumerable{``0},System.Func{``0,``1},System.Collections.Generic.IComparer{``1},System.Collections.Generic.IEqualityComparer{``0})">
+    <member name="M:NuGet.Shared.NuGet.LibraryModel609416.EqualityUtility.OrderedEquals``2(System.Collections.Generic.IEnumerable{``0},System.Collections.Generic.IEnumerable{``0},System.Func{``0,``1},System.Collections.Generic.IComparer{``1},System.Collections.Generic.IEqualityComparer{``0})">
       <summary>
             Compares two enumberables for equality, ordered according to the specified key and optional comparer. Handles null values gracefully.
             </summary>
@@ -6705,41 +6972,41 @@
       <param name="orderComparer">An optional comparer for comparing keys</param>
       <param name="sequenceComparer">An optional comparer for sequences</param>
     </member>
-    <member name="M:NuGet.Shared.NuGet.LibraryModel596632.EqualityUtility.SequenceEqualWithNullCheck``1(System.Collections.Generic.IEnumerable{``0},System.Collections.Generic.IEnumerable{``0},System.Collections.Generic.IEqualityComparer{``0})">
+    <member name="M:NuGet.Shared.NuGet.LibraryModel609416.EqualityUtility.SequenceEqualWithNullCheck``1(System.Collections.Generic.IEnumerable{``0},System.Collections.Generic.IEnumerable{``0},System.Collections.Generic.IEqualityComparer{``0})">
       <summary>
             Compares two sequence for equality, allowing either sequence to be null. If one is null, both have to be
             null for equality.
             </summary>
     </member>
-    <member name="M:NuGet.Shared.NuGet.LibraryModel596632.EqualityUtility.SetEqualsWithNullCheck``1(System.Collections.Generic.ISet{``0},System.Collections.Generic.ISet{``0},System.Collections.Generic.IEqualityComparer{``0})">
+    <member name="M:NuGet.Shared.NuGet.LibraryModel609416.EqualityUtility.SetEqualsWithNullCheck``1(System.Collections.Generic.ISet{``0},System.Collections.Generic.ISet{``0},System.Collections.Generic.IEqualityComparer{``0})">
       <summary>
             Compares two sets for equality, allowing either sequence to be null.
             If one is null, both have to be null for equality.
             </summary>
     </member>
-    <member name="T:NuGet.Shared.NuGet.LibraryModel596632.HashCodeCombiner">
+    <member name="T:NuGet.Shared.NuGet.LibraryModel609416.HashCodeCombiner">
       <summary>
             Hash code creator, based on the original NuGet hash code combiner/ASP hash code combiner implementations
             </summary>
     </member>
-    <member name="M:NuGet.Shared.NuGet.LibraryModel596632.HashCodeCombiner.GetHashCode``2(``0,``1)">
+    <member name="M:NuGet.Shared.NuGet.LibraryModel609416.HashCodeCombiner.GetHashCode``2(``0,``1)">
       <summary>
             Create a unique hash code for the given set of items
             </summary>
     </member>
-    <member name="M:NuGet.Shared.NuGet.LibraryModel596632.HashCodeCombiner.GetHashCode``3(``0,``1,``2)">
+    <member name="M:NuGet.Shared.NuGet.LibraryModel609416.HashCodeCombiner.GetHashCode``3(``0,``1,``2)">
       <summary>
             Create a unique hash code for the given set of items
             </summary>
     </member>
-    <member name="M:NuGet.Shared.NuGet.LibraryModel596632.Extensions.AsList``1(System.Collections.Generic.IEnumerable{``0})">
+    <member name="M:NuGet.Shared.NuGet.LibraryModel609416.Extensions.AsList``1(System.Collections.Generic.IEnumerable{``0})">
       <summary>
             Return the enumerable as a List of T, copying if required. Optimized for common case where it is an List of T.
             Avoid mutating the return value.
             </summary>
       <remarks>https://aspnetwebstack.codeplex.com/SourceControl/latest#src/Common/CollectionExtensions.cs</remarks>
     </member>
-    <member name="M:NuGet.Shared.NuGet.LibraryModel596632.Extensions.AsHashSet``1(System.Collections.Generic.ISet{``0},System.Collections.Generic.IEqualityComparer{``0})">
+    <member name="M:NuGet.Shared.NuGet.LibraryModel609416.Extensions.AsHashSet``1(System.Collections.Generic.ISet{``0},System.Collections.Generic.IEqualityComparer{``0})">
       <summary>
             Return the ISet as a HashSet of T, copying if required. Optimized for common case where it is a HashSet of T.
             Avoid mutating the return value.
@@ -6877,7 +7144,7 @@
             Indicates that the library could not be resolved
             </summary>
     </member>
-    <member name="M:NuGet.Shared.NuGet.Packaging.Core609246.EqualityUtility.OrderedEquals``2(System.Collections.Generic.IEnumerable{``0},System.Collections.Generic.IEnumerable{``0},System.Func{``0,``1},System.Collections.Generic.IComparer{``1},System.Collections.Generic.IEqualityComparer{``0})">
+    <member name="M:NuGet.Shared.NuGet.Packaging.Core622030.EqualityUtility.OrderedEquals``2(System.Collections.Generic.IEnumerable{``0},System.Collections.Generic.IEnumerable{``0},System.Func{``0,``1},System.Collections.Generic.IComparer{``1},System.Collections.Generic.IEqualityComparer{``0})">
       <summary>
             Compares two enumberables for equality, ordered according to the specified key and optional comparer. Handles null values gracefully.
             </summary>
@@ -6889,41 +7156,41 @@
       <param name="orderComparer">An optional comparer for comparing keys</param>
       <param name="sequenceComparer">An optional comparer for sequences</param>
     </member>
-    <member name="M:NuGet.Shared.NuGet.Packaging.Core609246.EqualityUtility.SequenceEqualWithNullCheck``1(System.Collections.Generic.IEnumerable{``0},System.Collections.Generic.IEnumerable{``0},System.Collections.Generic.IEqualityComparer{``0})">
+    <member name="M:NuGet.Shared.NuGet.Packaging.Core622030.EqualityUtility.SequenceEqualWithNullCheck``1(System.Collections.Generic.IEnumerable{``0},System.Collections.Generic.IEnumerable{``0},System.Collections.Generic.IEqualityComparer{``0})">
       <summary>
             Compares two sequence for equality, allowing either sequence to be null. If one is null, both have to be
             null for equality.
             </summary>
     </member>
-    <member name="M:NuGet.Shared.NuGet.Packaging.Core609246.EqualityUtility.SetEqualsWithNullCheck``1(System.Collections.Generic.ISet{``0},System.Collections.Generic.ISet{``0},System.Collections.Generic.IEqualityComparer{``0})">
+    <member name="M:NuGet.Shared.NuGet.Packaging.Core622030.EqualityUtility.SetEqualsWithNullCheck``1(System.Collections.Generic.ISet{``0},System.Collections.Generic.ISet{``0},System.Collections.Generic.IEqualityComparer{``0})">
       <summary>
             Compares two sets for equality, allowing either sequence to be null.
             If one is null, both have to be null for equality.
             </summary>
     </member>
-    <member name="T:NuGet.Shared.NuGet.Packaging.Core609246.HashCodeCombiner">
+    <member name="T:NuGet.Shared.NuGet.Packaging.Core622030.HashCodeCombiner">
       <summary>
             Hash code creator, based on the original NuGet hash code combiner/ASP hash code combiner implementations
             </summary>
     </member>
-    <member name="M:NuGet.Shared.NuGet.Packaging.Core609246.HashCodeCombiner.GetHashCode``2(``0,``1)">
+    <member name="M:NuGet.Shared.NuGet.Packaging.Core622030.HashCodeCombiner.GetHashCode``2(``0,``1)">
       <summary>
             Create a unique hash code for the given set of items
             </summary>
     </member>
-    <member name="M:NuGet.Shared.NuGet.Packaging.Core609246.HashCodeCombiner.GetHashCode``3(``0,``1,``2)">
+    <member name="M:NuGet.Shared.NuGet.Packaging.Core622030.HashCodeCombiner.GetHashCode``3(``0,``1,``2)">
       <summary>
             Create a unique hash code for the given set of items
             </summary>
     </member>
-    <member name="M:NuGet.Shared.NuGet.Packaging.Core609246.Extensions.AsList``1(System.Collections.Generic.IEnumerable{``0})">
+    <member name="M:NuGet.Shared.NuGet.Packaging.Core622030.Extensions.AsList``1(System.Collections.Generic.IEnumerable{``0})">
       <summary>
             Return the enumerable as a List of T, copying if required. Optimized for common case where it is an List of T.
             Avoid mutating the return value.
             </summary>
       <remarks>https://aspnetwebstack.codeplex.com/SourceControl/latest#src/Common/CollectionExtensions.cs</remarks>
     </member>
-    <member name="M:NuGet.Shared.NuGet.Packaging.Core609246.Extensions.AsHashSet``1(System.Collections.Generic.ISet{``0},System.Collections.Generic.IEqualityComparer{``0})">
+    <member name="M:NuGet.Shared.NuGet.Packaging.Core622030.Extensions.AsHashSet``1(System.Collections.Generic.ISet{``0},System.Collections.Generic.IEqualityComparer{``0})">
       <summary>
             Return the ISet as a HashSet of T, copying if required. Optimized for common case where it is a HashSet of T.
             Avoid mutating the return value.
@@ -7612,7 +7879,7 @@
               Looks up a localized string similar to String argument '{0}' cannot be null or empty.
             </summary>
     </member>
-    <member name="M:NuGet.Shared.NuGet.Packaging624665.EqualityUtility.OrderedEquals``2(System.Collections.Generic.IEnumerable{``0},System.Collections.Generic.IEnumerable{``0},System.Func{``0,``1},System.Collections.Generic.IComparer{``1},System.Collections.Generic.IEqualityComparer{``0})">
+    <member name="M:NuGet.Shared.NuGet.Packaging638384.EqualityUtility.OrderedEquals``2(System.Collections.Generic.IEnumerable{``0},System.Collections.Generic.IEnumerable{``0},System.Func{``0,``1},System.Collections.Generic.IComparer{``1},System.Collections.Generic.IEqualityComparer{``0})">
       <summary>
             Compares two enumberables for equality, ordered according to the specified key and optional comparer. Handles null values gracefully.
             </summary>
@@ -7624,41 +7891,41 @@
       <param name="orderComparer">An optional comparer for comparing keys</param>
       <param name="sequenceComparer">An optional comparer for sequences</param>
     </member>
-    <member name="M:NuGet.Shared.NuGet.Packaging624665.EqualityUtility.SequenceEqualWithNullCheck``1(System.Collections.Generic.IEnumerable{``0},System.Collections.Generic.IEnumerable{``0},System.Collections.Generic.IEqualityComparer{``0})">
+    <member name="M:NuGet.Shared.NuGet.Packaging638384.EqualityUtility.SequenceEqualWithNullCheck``1(System.Collections.Generic.IEnumerable{``0},System.Collections.Generic.IEnumerable{``0},System.Collections.Generic.IEqualityComparer{``0})">
       <summary>
             Compares two sequence for equality, allowing either sequence to be null. If one is null, both have to be
             null for equality.
             </summary>
     </member>
-    <member name="M:NuGet.Shared.NuGet.Packaging624665.EqualityUtility.SetEqualsWithNullCheck``1(System.Collections.Generic.ISet{``0},System.Collections.Generic.ISet{``0},System.Collections.Generic.IEqualityComparer{``0})">
+    <member name="M:NuGet.Shared.NuGet.Packaging638384.EqualityUtility.SetEqualsWithNullCheck``1(System.Collections.Generic.ISet{``0},System.Collections.Generic.ISet{``0},System.Collections.Generic.IEqualityComparer{``0})">
       <summary>
             Compares two sets for equality, allowing either sequence to be null.
             If one is null, both have to be null for equality.
             </summary>
     </member>
-    <member name="T:NuGet.Shared.NuGet.Packaging624665.HashCodeCombiner">
+    <member name="T:NuGet.Shared.NuGet.Packaging638384.HashCodeCombiner">
       <summary>
             Hash code creator, based on the original NuGet hash code combiner/ASP hash code combiner implementations
             </summary>
     </member>
-    <member name="M:NuGet.Shared.NuGet.Packaging624665.HashCodeCombiner.GetHashCode``2(``0,``1)">
+    <member name="M:NuGet.Shared.NuGet.Packaging638384.HashCodeCombiner.GetHashCode``2(``0,``1)">
       <summary>
             Create a unique hash code for the given set of items
             </summary>
     </member>
-    <member name="M:NuGet.Shared.NuGet.Packaging624665.HashCodeCombiner.GetHashCode``3(``0,``1,``2)">
+    <member name="M:NuGet.Shared.NuGet.Packaging638384.HashCodeCombiner.GetHashCode``3(``0,``1,``2)">
       <summary>
             Create a unique hash code for the given set of items
             </summary>
     </member>
-    <member name="M:NuGet.Shared.NuGet.Packaging624665.Extensions.AsList``1(System.Collections.Generic.IEnumerable{``0})">
+    <member name="M:NuGet.Shared.NuGet.Packaging638384.Extensions.AsList``1(System.Collections.Generic.IEnumerable{``0})">
       <summary>
             Return the enumerable as a List of T, copying if required. Optimized for common case where it is an List of T.
             Avoid mutating the return value.
             </summary>
       <remarks>https://aspnetwebstack.codeplex.com/SourceControl/latest#src/Common/CollectionExtensions.cs</remarks>
     </member>
-    <member name="M:NuGet.Shared.NuGet.Packaging624665.Extensions.AsHashSet``1(System.Collections.Generic.ISet{``0},System.Collections.Generic.IEqualityComparer{``0})">
+    <member name="M:NuGet.Shared.NuGet.Packaging638384.Extensions.AsHashSet``1(System.Collections.Generic.ISet{``0},System.Collections.Generic.IEqualityComparer{``0})">
       <summary>
             Return the ISet as a HashSet of T, copying if required. Optimized for common case where it is a HashSet of T.
             Avoid mutating the return value.
@@ -8140,10 +8407,11 @@
             A package downloader for local archive packages.
             </summary>
     </member>
-    <member name="M:NuGet.Packaging.LocalPackageArchiveDownloader.#ctor(System.String,NuGet.Packaging.Core.PackageIdentity,NuGet.Common.ILogger)">
+    <member name="M:NuGet.Packaging.LocalPackageArchiveDownloader.#ctor(System.String,System.String,NuGet.Packaging.Core.PackageIdentity,NuGet.Common.ILogger)">
       <summary>
             Initializes a new <see cref="T:NuGet.Packaging.LocalPackageArchiveDownloader" /> class.
             </summary>
+      <param name="source">A package source.</param>
       <param name="packageFilePath">A source package archive file path.</param>
       <param name="packageIdentity">A package identity.</param>
       <param name="logger">A logger.</param>
@@ -8368,6 +8636,11 @@
     <member name="M:NuGet.Packaging.NuspecReader.GetCopyright">
       <summary>
             Copyright information.
+            </summary>
+    </member>
+    <member name="M:NuGet.Packaging.NuspecReader.GetRepositoryMetadata">
+      <summary>
+            Source control repository information.
             </summary>
     </member>
     <member name="M:NuGet.Packaging.NuspecReader.GetRequireLicenseAcceptance">
@@ -8639,7 +8912,7 @@
             Nupkg reading helper methods
             </summary>
     </member>
-    <member name="M:NuGet.Packaging.PackageExtractor.InstallFromSourceAsync(NuGet.Packaging.Core.PackageIdentity,System.Func{System.IO.Stream,System.Threading.Tasks.Task},NuGet.Packaging.VersionFolderPathResolver,NuGet.Packaging.PackageExtractionContext,System.Threading.CancellationToken,System.Guid)">
+    <member name="M:NuGet.Packaging.PackageExtractor.InstallFromSourceAsync(System.String,NuGet.Packaging.Core.PackageIdentity,System.Func{System.IO.Stream,System.Threading.Tasks.Task},NuGet.Packaging.VersionFolderPathResolver,NuGet.Packaging.PackageExtractionContext,System.Threading.CancellationToken,System.Guid)">
       <summary>
             Uses a copy function to install a package to a global packages directory.
             </summary>
@@ -9005,6 +9278,26 @@
             Represents the ".nuspec" extension.
             </summary>
     </member>
+    <member name="T:NuGet.Packaging.RepositorySignatureInfoProvider">
+      <summary>
+            RepositorySignatureInfoProvdier is a static cache for repository signature information for package source.
+            </summary>
+    </member>
+    <member name="M:NuGet.Packaging.RepositorySignatureInfoProvider.TryGetRepositorySignatureInfo(System.String,NuGet.Packaging.RepositorySignatureInfo@)">
+      <summary>
+            Try to get repository signature information for the source.
+            </summary>
+      <param name="source">Package source URL.</param>
+      <param name="repositorySignatureInfo">Contains the RepositorySignatureInfo when the method returns. It is null if repository signature information is unavailable.</param>
+      <returns>True if the repository signature information was found. Otherwise, False.</returns>
+    </member>
+    <member name="M:NuGet.Packaging.RepositorySignatureInfoProvider.AddOrUpdateRepositorySignatureInfo(System.String,NuGet.Packaging.RepositorySignatureInfo)">
+      <summary>
+            Add or update the repository signature information for the source.
+            </summary>
+      <param name="source">Package source URL.</param>
+      <param name="repositorySignatureInfo">RepositorySignatureInfo for the source url.</param>
+    </member>
     <member name="T:NuGet.Packaging.Strings">
       <summary>
               A strongly-typed resource class, for looking up localized strings, etc.
@@ -9086,14 +9379,39 @@
               Looks up a localized string similar to Unsupported targetFramework value '{0}'..
             </summary>
     </member>
-    <member name="P:NuGet.Packaging.Strings.Error_NoMatchingCertificate">
+    <member name="P:NuGet.Packaging.Strings.Error_NoClientAllowList">
       <summary>
-              Looks up a localized string similar to No certificate matching the provided {0} fingerprint(s) was found in the signature..
+              Looks up a localized string similar to The package signature certificate cannot be trusted as no client allow list found..
+            </summary>
+    </member>
+    <member name="P:NuGet.Packaging.Strings.Error_NoMatchingClientCertificate">
+      <summary>
+              Looks up a localized string similar to The package signature certificate fingerprint does not match any certificate fingerprint in client allow list..
+            </summary>
+    </member>
+    <member name="P:NuGet.Packaging.Strings.Error_NoMatchingRepositoryCertificate">
+      <summary>
+              Looks up a localized string similar to The package signature certificate fingerprint does not match any certificate fingerprint in repository allow list..
+            </summary>
+    </member>
+    <member name="P:NuGet.Packaging.Strings.Error_NoRepoAllowList">
+      <summary>
+              Looks up a localized string similar to The package signature certificate cannot be trusted as no repository allow list found..
             </summary>
     </member>
     <member name="P:NuGet.Packaging.Strings.Error_NotOnePrimarySignature">
       <summary>
-              Looks up a localized string similar to The package signature contains multiple primary signatures..
+              Looks up a localized string similar to The package signature file does not contain exactly one primary signature..
+            </summary>
+    </member>
+    <member name="P:NuGet.Packaging.Strings.Error_NotOneRepositoryCounterSignature">
+      <summary>
+              Looks up a localized string similar to The package signature contains multiple repository countersignatures..
+            </summary>
+    </member>
+    <member name="P:NuGet.Packaging.Strings.Error_RepositorySignatureMustNotHaveARepositoryCountersignature">
+      <summary>
+              Looks up a localized string similar to A repository primary signature must not have a repository countersignature..
             </summary>
     </member>
     <member name="P:NuGet.Packaging.Strings.ErrorByteSignatureNotFound">
@@ -9201,6 +9519,16 @@
               Looks up a localized string similar to Signed Zip64 packages are not supported..
             </summary>
     </member>
+    <member name="P:NuGet.Packaging.Strings.ExactlyOneAttributeRequired">
+      <summary>
+              Looks up a localized string similar to Exactly one {0} attribute is required..
+            </summary>
+    </member>
+    <member name="P:NuGet.Packaging.Strings.ExactlyOneAttributeValueRequired">
+      <summary>
+              Looks up a localized string similar to The {0} attribute must have exactly one attribute value..
+            </summary>
+    </member>
     <member name="P:NuGet.Packaging.Strings.FailedFileTime">
       <summary>
               Looks up a localized string similar to Failed to update file time for {0}: {1}.
@@ -9251,9 +9579,14 @@
               Looks up a localized string similar to Package {0} signature is invalid..
             </summary>
     </member>
+    <member name="P:NuGet.Packaging.Strings.InvalidPackageSignatureFile">
+      <summary>
+              Looks up a localized string similar to The package contains an invalid package signature file..
+            </summary>
+    </member>
     <member name="P:NuGet.Packaging.Strings.InvalidPackageSignatureFileEntry">
       <summary>
-              Looks up a localized string similar to The package signature file entry is invalid..
+              Looks up a localized string similar to The package signature file entry is invalid. {0}.
             </summary>
     </member>
     <member name="P:NuGet.Packaging.Strings.InvalidPackageSignatureFileEntryCentralDirectoryHeader">
@@ -9271,6 +9604,11 @@
               Looks up a localized string similar to The primary signature is invalid..
             </summary>
     </member>
+    <member name="P:NuGet.Packaging.Strings.InvalidRepositoryCountersignature">
+      <summary>
+              Looks up a localized string similar to The repository countersignature is invalid..
+            </summary>
+    </member>
     <member name="P:NuGet.Packaging.Strings.InvalidSignatureContent">
       <summary>
               Looks up a localized string similar to The package signature content is invalid..
@@ -9279,6 +9617,11 @@
     <member name="P:NuGet.Packaging.Strings.InvalidTimestampSignature">
       <summary>
               Looks up a localized string similar to The timestamp signature is invalid..
+            </summary>
+    </member>
+    <member name="P:NuGet.Packaging.Strings.InvalidUrl">
+      <summary>
+              Looks up a localized string similar to The URL value is invalid..
             </summary>
     </member>
     <member name="P:NuGet.Packaging.Strings.Log_InstallingPackage">
@@ -9296,9 +9639,9 @@
               Looks up a localized string similar to Nuspec file does not exist in package..
             </summary>
     </member>
-    <member name="P:NuGet.Packaging.Strings.MultipleAttributeInstanceFound">
+    <member name="P:NuGet.Packaging.Strings.MultipleAttributesDisallowed">
       <summary>
-              Looks up a localized string similar to Multiple instances of attribute '{0}' were found..
+              Looks up a localized string similar to Multiple {0} attributes are not allowed..
             </summary>
     </member>
     <member name="P:NuGet.Packaging.Strings.MultipleNuspecFiles">
@@ -9306,9 +9649,49 @@
               Looks up a localized string similar to Package contains multiple nuspec files..
             </summary>
     </member>
+    <member name="P:NuGet.Packaging.Strings.MultiplePackageSignatureFiles">
+      <summary>
+              Looks up a localized string similar to The package contains multiple package signature files..
+            </summary>
+    </member>
     <member name="P:NuGet.Packaging.Strings.MustContainAbsolutePath">
       <summary>
               Looks up a localized string similar to '{0}' must contain an absolute path '{1}'..
+            </summary>
+    </member>
+    <member name="P:NuGet.Packaging.Strings.NoPackageSignatureFile">
+      <summary>
+              Looks up a localized string similar to The package does not contain a valid package signature file..
+            </summary>
+    </member>
+    <member name="P:NuGet.Packaging.Strings.NuGetPackageOwners">
+      <summary>
+              Looks up a localized string similar to nuget-package-owners: {0}.
+            </summary>
+    </member>
+    <member name="P:NuGet.Packaging.Strings.NuGetPackageOwnersInvalid">
+      <summary>
+              Looks up a localized string similar to The nuget-package-owners attribute is invalid..
+            </summary>
+    </member>
+    <member name="P:NuGet.Packaging.Strings.NuGetPackageOwnersInvalidValue">
+      <summary>
+              Looks up a localized string similar to One or more package owner values are invalid..
+            </summary>
+    </member>
+    <member name="P:NuGet.Packaging.Strings.NuGetV3ServiceIndexUrl">
+      <summary>
+              Looks up a localized string similar to nuget-v3-service-index-url: {0}.
+            </summary>
+    </member>
+    <member name="P:NuGet.Packaging.Strings.NuGetV3ServiceIndexUrlInvalid">
+      <summary>
+              Looks up a localized string similar to The nuget-v3-service-index-url attribute is invalid..
+            </summary>
+    </member>
+    <member name="P:NuGet.Packaging.Strings.NuGetV3ServiceIndexUrlInvalidValue">
+      <summary>
+              Looks up a localized string similar to The nuget-v3-service-index-url attribute value is invalid..
             </summary>
     </member>
     <member name="P:NuGet.Packaging.Strings.PackageEntryAlreadyExist">
@@ -9344,6 +9727,16 @@
     <member name="P:NuGet.Packaging.Strings.RangeOutOfBoundsForArray">
       <summary>
               Looks up a localized string similar to Arguments {0} and {1} were out of bounds for the array..
+            </summary>
+    </member>
+    <member name="P:NuGet.Packaging.Strings.RepositoryCountersignatureHasNoCertificate">
+      <summary>
+              Looks up a localized string similar to The repository countersignature does not have a signing certificate..
+            </summary>
+    </member>
+    <member name="P:NuGet.Packaging.Strings.RepositoryCountersignatureHasNoTimestamp">
+      <summary>
+              Looks up a localized string similar to The repository countersignature does not have a timestamp..
             </summary>
     </member>
     <member name="P:NuGet.Packaging.Strings.SignatureContainsInvalidAttribute">
@@ -9391,6 +9784,11 @@
               Looks up a localized string similar to Signature type: {0}.
             </summary>
     </member>
+    <member name="P:NuGet.Packaging.Strings.SignedPackageAlreadySigned">
+      <summary>
+              Looks up a localized string similar to The package already contains a signature. Please remove the existing signature before adding a new signature..
+            </summary>
+    </member>
     <member name="P:NuGet.Packaging.Strings.SignedPackageArchiveIOExtraRead">
       <summary>
               Looks up a localized string similar to Package stream read position cannot be longer than the length of the stream..
@@ -9411,9 +9809,9 @@
               Looks up a localized string similar to The package is not signed. Unable to verify signature from an unsigned package..
             </summary>
     </member>
-    <member name="P:NuGet.Packaging.Strings.SignedPackagePackageAlreadySigned">
+    <member name="P:NuGet.Packaging.Strings.SignedPackagePackageAlreadyCountersigned">
       <summary>
-              Looks up a localized string similar to The package already contains a signature. Please remove the existing signature before adding a new signature..
+              Looks up a localized string similar to The package already contains a repository countersignature. Please remove the existing signature before adding a new repository countersignature..
             </summary>
     </member>
     <member name="P:NuGet.Packaging.Strings.SignedPackageUnableToAccessSignature">
@@ -9424,6 +9822,11 @@
     <member name="P:NuGet.Packaging.Strings.SignFailureCertificateInvalidProviderType">
       <summary>
               Looks up a localized string similar to The following certificate cannot be used for package signing as the private key provider is unsupported:.
+            </summary>
+    </member>
+    <member name="P:NuGet.Packaging.Strings.SigningCannotBeDoneInPlace">
+      <summary>
+              Looks up a localized string similar to {0} and {1} should be different. Package signing cannot be done in place..
             </summary>
     </member>
     <member name="P:NuGet.Packaging.Strings.SigningCertificateAttributeMustNotBePresent">
@@ -9451,24 +9854,9 @@
               Looks up a localized string similar to The signing-certificate attribute is invalid..
             </summary>
     </member>
-    <member name="P:NuGet.Packaging.Strings.SigningCertificateMultipleAttributes">
-      <summary>
-              Looks up a localized string similar to Multiple signing-certificate attributes are not allowed..
-            </summary>
-    </member>
-    <member name="P:NuGet.Packaging.Strings.SigningCertificateMultipleAttributeValues">
-      <summary>
-              Looks up a localized string similar to Multiple signing-certificate attribute values are not allowed..
-            </summary>
-    </member>
     <member name="P:NuGet.Packaging.Strings.SigningCertificateV1OrV2AttributeMustBePresent">
       <summary>
               Looks up a localized string similar to Either the signing-certificate or signing-certificate-v2 attribute must be present..
-            </summary>
-    </member>
-    <member name="P:NuGet.Packaging.Strings.SigningCertificateV2AttributeMustBePresent">
-      <summary>
-              Looks up a localized string similar to The signing-certificate-v2 attribute must be present..
             </summary>
     </member>
     <member name="P:NuGet.Packaging.Strings.SigningCertificateV2CertificateNotFound">
@@ -9481,14 +9869,9 @@
               Looks up a localized string similar to The signing-certificate-v2 attribute is invalid..
             </summary>
     </member>
-    <member name="P:NuGet.Packaging.Strings.SigningCertificateV2MultipleAttributes">
+    <member name="P:NuGet.Packaging.Strings.SigningCertificateV2NotExactlyOneAttributeValue">
       <summary>
-              Looks up a localized string similar to Multiple signing-certificate-v2 attributes are not allowed..
-            </summary>
-    </member>
-    <member name="P:NuGet.Packaging.Strings.SigningCertificateV2MultipleAttributeValues">
-      <summary>
-              Looks up a localized string similar to Multiple signing-certificate-v2 attribute values are not allowed..
+              Looks up a localized string similar to The signing-certificate-v2 attribute does not have exactly one attribute value..
             </summary>
     </member>
     <member name="P:NuGet.Packaging.Strings.SigningCertificateV2UnsupportedHashAlgorithm">
@@ -9594,6 +9977,11 @@
     <member name="P:NuGet.Packaging.Strings.UnexpectedPackageSignatureVerificationError">
       <summary>
               Looks up a localized string similar to An unexpected error occurred while verifying a package signature..
+            </summary>
+    </member>
+    <member name="P:NuGet.Packaging.Strings.UnrelatedSignatures">
+      <summary>
+              Looks up a localized string similar to The primary signature and repository countersignature are unrelated..
             </summary>
     </member>
     <member name="P:NuGet.Packaging.Strings.UnsupportedAsn1">
@@ -9762,7 +10150,7 @@
             Position in bytes of the corresponding central directory header relative to the start of the archive
             </summary>
     </member>
-    <member name="P:NuGet.Packaging.Signing.CentralDirectoryHeaderMetadata.OffsetToFileHeader">
+    <member name="P:NuGet.Packaging.Signing.CentralDirectoryHeaderMetadata.OffsetToLocalFileHeader">
       <summary>
             Offset in bytes to the corresponding file header relative to the start of the archive
             </summary>
@@ -9809,20 +10197,6 @@
       <param name="data">Byte[] of the data.</param>
       <returns>32 bit cyclic redundancy code for the input data in uint.</returns>
     </member>
-    <member name="M:NuGet.Packaging.Signing.SignedPackageArchiveIOUtility.SeekReaderForwardToMatchByteSignature(System.IO.BinaryReader,System.Byte[])">
-      <summary>
-            Takes a binary reader and moves forwards the current position of its base stream until it finds the specified signature.
-            </summary>
-      <param name="reader">Binary reader to update current position</param>
-      <param name="byteSignature">byte signature to be matched</param>
-    </member>
-    <member name="M:NuGet.Packaging.Signing.SignedPackageArchiveIOUtility.SeekReaderBackwardToMatchByteSignature(System.IO.BinaryReader,System.Byte[])">
-      <summary>
-            Takes a binary reader and moves backwards the current position of it's base stream until it finds the specified signature.
-            </summary>
-      <param name="reader">Binary reader to update current position</param>
-      <param name="byteSignature">byte signature to be matched</param>
-    </member>
     <member name="M:NuGet.Packaging.Signing.SignedPackageArchiveIOUtility.ReadAndWriteUntilPosition(System.IO.BinaryReader,System.IO.BinaryWriter,System.Int64)">
       <summary>
             Read bytes from a BinaryReader and write them to the BinaryWriter and stop when the provided position
@@ -9855,28 +10229,12 @@
       <param name="reader">binary reader to zip archive</param>
       <returns>metadata with offsets and positions for entries</returns>
     </member>
-    <member name="M:NuGet.Packaging.Signing.SignedPackageArchiveIOUtility.UpdateSignedPackageArchiveMetadata(System.IO.BinaryReader,NuGet.Packaging.Signing.SignedPackageArchiveMetadata)">
-      <summary>
-            Updates the SignedPackageArchiveMetadata.CentralDirectoryHeaders by updating IndexInHeaders and FileEntryTotalSize.
-            Updates the SignedPackageArchiveMetadata.EndOfFileHeaders.
-            </summary>
-      <param name="reader">Binary reader to zip archive.</param>
-      <param name="metadata">SignedPackageArchiveMetadata to be updated.</param>
-    </member>
-    <member name="M:NuGet.Packaging.Signing.SignedPackageArchiveIOUtility.AssertExactlyOnePrimarySignatureAndUpdateMetadata(NuGet.Packaging.Signing.SignedPackageArchiveMetadata)">
-      <summary>
-            Asserts that the SignedPackageArchiveMetadata contains only one Signature file entry.
-            Updates SignedPackageArchiveMetadata.SignatureCentralDirectoryHeaderIndex with the index of the signature central directory header.
-            Throws SignatureException if less or more entries are found.
-            </summary>
-      <param name="metadata">SignedPackageArchiveMetadata to be checked for signature entry.</param>
-    </member>
-    <member name="M:NuGet.Packaging.Signing.SignedPackageArchiveIOUtility.AssertSignatureEntryMetadata(System.IO.BinaryReader,NuGet.Packaging.Signing.CentralDirectoryHeaderMetadata)">
+    <member name="M:NuGet.Packaging.Signing.SignedPackageArchiveIOUtility.AssertSignatureEntryMetadata(System.IO.BinaryReader,NuGet.Packaging.Signing.SignedPackageArchiveMetadata)">
       <summary>
             Asserts the validity of central directory header and local file header for the package signature file entry.
             </summary>
       <param name="reader">BinaryReader on the package.</param>
-      <param name="signatureCentralDirectoryHeader">Metadata for the package signature file's central directory header.</param>
+      <param name="metadata">Metadata for the package signature file's central directory header.</param>
       <exception cref="T:NuGet.Packaging.Signing.SignatureException">Thrown if either header is invalid.</exception>
     </member>
     <member name="M:NuGet.Packaging.Signing.SignedPackageArchiveIOUtility.WriteSignatureIntoZip(System.IO.MemoryStream,System.IO.BinaryReader,System.IO.BinaryWriter)">
@@ -9917,13 +10275,14 @@
       <param name="fileOffset">Offset, in bytes, for the local file header of the corresponding file from the start of the archive.</param>
       <returns>Number of total bytes written into the zip.</returns>
     </member>
-    <member name="M:NuGet.Packaging.Signing.SignedPackageArchiveIOUtility.ReadAndWriteUpdatedEndOfCentralDirectoryRecordIntoZip(System.IO.BinaryReader,System.IO.BinaryWriter,System.Int64,System.Int64)">
+    <member name="M:NuGet.Packaging.Signing.SignedPackageArchiveIOUtility.ReadAndWriteUpdatedEndOfCentralDirectoryRecordIntoZip(System.IO.BinaryReader,System.IO.BinaryWriter,System.SByte,System.Int64,System.Int64)">
       <summary>
             Writes the end of central directory header into a zip using the writer starting at the writer.BaseStream.Position.
             The new end of central directory record will be based on the one at reader.BaseStream.Position.
             </summary>
-      <param name="reader">BinaryWriter to be used to read exisitng end of central directory record.</param>
-      <param name="writer">BinaryWriter to be used to write file.</param>
+      <param name="reader">BinaryReader to be used to read the existing end of central directory record.</param>
+      <param name="writer">BinaryWriter to be used to write the updated end of central directory record.</param>
+      <param name="entryCountChange">The change to central directory header counts.</param>
       <param name="sizeOfSignatureCentralDirectoryRecord">Size of the central directory header for the signature file.</param>
       <param name="sizeOfSignatureFileHeaderAndData">Size of the signature file and the corresponding local file header.</param>
     </member>
@@ -9946,14 +10305,9 @@
             List of central directory metadata ordered by the same order the central directory headers are in the archive
             </summary>
     </member>
-    <member name="P:NuGet.Packaging.Signing.SignedPackageArchiveMetadata.StartOfFileHeaders">
+    <member name="P:NuGet.Packaging.Signing.SignedPackageArchiveMetadata.StartOfLocalFileHeaders">
       <summary>
             Offset, in bytes, to the first file header relative to the start of the archive. Should typically be 0.
-            </summary>
-    </member>
-    <member name="P:NuGet.Packaging.Signing.SignedPackageArchiveMetadata.EndOfFileHeaders">
-      <summary>
-            Offset, in bytes, to the end of last file header relative to the start of the archive.
             </summary>
     </member>
     <member name="P:NuGet.Packaging.Signing.SignedPackageArchiveMetadata.EndOfCentralDirectory">
@@ -9967,20 +10321,31 @@
             If the CentralDirectoryHeaders list is ordered by IndexInHeaders this index indicates the position on the list for the signature.
             </summary>
     </member>
-    <member name="P:NuGet.Packaging.Signing.SignedPackageArchiveMetadata.EndOfCentralDirectoryRecordPosition">
-      <summary>
-            Offset, in bytes, to the start of "End of Central Directory Record" relative to the start of the archive.
-            </summary>
-    </member>
-    <member name="T:NuGet.Packaging.Signing.SignedPackageArchiveUtility">
-      <remarks>This is public only to facilitate testing.</remarks>
-    </member>
     <member name="M:NuGet.Packaging.Signing.SignedPackageArchiveUtility.IsSigned(System.IO.BinaryReader)">
       <summary>
             Utility method to know if a zip archive is signed.
             </summary>
       <param name="reader">Binary reader pointing to a zip archive.</param>
       <returns>true if the given archive is signed</returns>
+    </member>
+    <member name="M:NuGet.Packaging.Signing.SignedPackageArchiveUtility.OpenPackageSignatureFileStream(System.IO.BinaryReader)">
+      <summary>
+            Opens a read-only stream for the package signature file.
+            </summary>
+      <remarks>Callers should first verify that a package is signed before calling this method.</remarks>
+      <param name="reader">A binary reader for a signed package.</param>
+      <returns>A readable stream.</returns>
+      <exception cref="T:System.ArgumentNullException">Thrown if <paramref name="reader" /> is <c>null</c>.</exception>
+      <exception cref="T:NuGet.Packaging.Signing.SignatureException">Thrown if a package signature file is invalid or missing.</exception>
+    </member>
+    <member name="M:NuGet.Packaging.Signing.SignedPackageArchiveUtility.RemoveRepositorySignaturesAsync(System.IO.Stream,System.IO.Stream,System.Threading.CancellationToken)">
+      <summary>
+            Removes repository primary signature (if it exists) or any repository countersignature (if it exists).
+            </summary>
+      <param name="input">A readable stream for a signed package.</param>
+      <param name="output">A read/write stream for receiving an updated package.</param>
+      <param name="cancellationToken">A cancellation token.</param>
+      <returns>A flag indicating whether or not a signature was removed.</returns>
     </member>
     <member name="M:NuGet.Packaging.Signing.SignedPackageArchiveUtility.SignZip(System.IO.MemoryStream,System.IO.BinaryReader,System.IO.BinaryWriter)">
       <summary>
@@ -10000,65 +10365,163 @@
       <param name="expectedHash">Hash value of the original data.</param>
       <returns>True if package archive's hash matches the expected hash</returns>
     </member>
-    <member name="T:NuGet.Packaging.Signing.ISignatureProvider">
+    <member name="M:NuGet.Packaging.Signing.AuthorSignPackageRequest.#ctor(System.Security.Cryptography.X509Certificates.X509Certificate2,NuGet.Common.HashAlgorithmName)">
       <summary>
-            Creates Signatures that can be added to packages.
-            </summary>
-    </member>
-    <member name="M:NuGet.Packaging.Signing.ISignatureProvider.CreateSignatureAsync(NuGet.Packaging.Signing.SignPackageRequest,NuGet.Packaging.Signing.SignatureContent,NuGet.Common.ILogger,System.Threading.CancellationToken)">
-      <summary>
-            Create a signature.
-            </summary>
-      <param name="certificate">Certificate to be used while signing the package.</param>
-      <param name="signatureContent">SignatureContent containing the Hash of the package and the signature version.</param>
-      <param name="logger">Logger</param>
-      <param name="token">Cancellation token.</param>
-      <returns>A signature for the package.</returns>
-    </member>
-    <member name="T:NuGet.Packaging.Signing.Signer">
-      <summary>
-            Remove or add signature package metadata.
-            </summary>
-    </member>
-    <member name="M:NuGet.Packaging.Signing.Signer.#ctor(NuGet.Packaging.Signing.ISignedPackage,NuGet.Packaging.Signing.ISignatureProvider)">
-      <summary>
-            Creates a signer for a specific package.
-            </summary>
-      <param name="package">Package to sign or modify.</param>
-    </member>
-    <member name="M:NuGet.Packaging.Signing.Signer.SignAsync(NuGet.Packaging.Signing.SignPackageRequest,NuGet.Common.ILogger,System.Threading.CancellationToken)">
-      <summary>
-            Add a signature to a package.
-            </summary>
-    </member>
-    <member name="M:NuGet.Packaging.Signing.Signer.RemoveSignaturesAsync(NuGet.Common.ILogger,System.Threading.CancellationToken)">
-      <summary>
-            Remove all signatures from a package.
-            </summary>
-    </member>
-    <member name="T:NuGet.Packaging.Signing.SignPackageRequest">
-      <summary>
-            Contains a request for generating package signature.
-            </summary>
-    </member>
-    <member name="M:NuGet.Packaging.Signing.SignPackageRequest.#ctor(System.Security.Cryptography.X509Certificates.X509Certificate2,NuGet.Common.HashAlgorithmName)">
-      <summary>
-            Instantiates a new instance of the <see cref="T:NuGet.Packaging.Signing.SignPackageRequest" /> class.
+            Instantiates a new instance of the <see cref="T:NuGet.Packaging.Signing.AuthorSignPackageRequest" /> class.
             </summary>
       <param name="certificate">The signing certificate.</param>
-      <param name="signatureHashAlgorithm">The signature hash algorithm.</param>
+      <param name="hashAlgorithm">The signature and timestamp hash algorithm.</param>
       <exception cref="T:System.ArgumentNullException">Thrown if <paramref name="certificate" />
             is <c>null</c>.</exception>
+      <exception cref="T:System.ArgumentException">Thrown if <paramref name="hashAlgorithm" />
+            is invalid.</exception>
     </member>
-    <member name="M:NuGet.Packaging.Signing.SignPackageRequest.#ctor(System.Security.Cryptography.X509Certificates.X509Certificate2,NuGet.Common.HashAlgorithmName,NuGet.Common.HashAlgorithmName)">
+    <member name="M:NuGet.Packaging.Signing.AuthorSignPackageRequest.#ctor(System.Security.Cryptography.X509Certificates.X509Certificate2,NuGet.Common.HashAlgorithmName,NuGet.Common.HashAlgorithmName)">
       <summary>
-            Instantiates a new instance of the <see cref="T:NuGet.Packaging.Signing.SignPackageRequest" /> class.
+            Instantiates a new instance of the <see cref="T:NuGet.Packaging.Signing.AuthorSignPackageRequest" /> class.
             </summary>
       <param name="certificate">The signing certificate.</param>
       <param name="signatureHashAlgorithm">The signature hash algorithm.</param>
       <param name="timestampHashAlgorithm">The timestamp hash algorithm.</param>
       <exception cref="T:System.ArgumentNullException">Thrown if <paramref name="certificate" />
             is <c>null</c>.</exception>
+      <exception cref="T:System.ArgumentException">Thrown if <paramref name="signatureHashAlgorithm" />
+            is invalid.</exception>
+      <exception cref="T:System.ArgumentException">Thrown if <paramref name="timestampHashAlgorithm" />
+            is invalid.</exception>
+    </member>
+    <member name="P:NuGet.Packaging.Signing.AuthorSignPackageRequest.SignatureType">
+      <summary>
+            Gets the signature type.
+            </summary>
+    </member>
+    <member name="T:NuGet.Packaging.Signing.ISignatureProvider">
+      <summary>
+            Creates Signatures that can be added to packages.
+            </summary>
+    </member>
+    <member name="M:NuGet.Packaging.Signing.ISignatureProvider.CreatePrimarySignatureAsync(NuGet.Packaging.Signing.SignPackageRequest,NuGet.Packaging.Signing.SignatureContent,NuGet.Common.ILogger,System.Threading.CancellationToken)">
+      <summary>
+            Create a signature.
+            </summary>
+      <param name="request">Signing request with all the information needed to create signature.</param>
+      <param name="signatureContent">SignatureContent containing the Hash of the package and the signature version.</param>
+      <param name="logger">Logger</param>
+      <param name="token">Cancellation token.</param>
+      <returns>A signature for the package.</returns>
+    </member>
+    <member name="M:NuGet.Packaging.Signing.ISignatureProvider.CreateRepositoryCountersignatureAsync(NuGet.Packaging.Signing.RepositorySignPackageRequest,NuGet.Packaging.Signing.PrimarySignature,NuGet.Common.ILogger,System.Threading.CancellationToken)">
+      <summary>
+            Create a repository countersignature.
+            </summary>
+      <param name="request">Signing request with all the information needed to create signature.</param>
+      <param name="primarySignature">Primary signature to be countersigned.</param>
+      <param name="logger">Logger</param>
+      <param name="token">Cancellation token.</param>
+      <returns>A signature for the package.</returns>
+    </member>
+    <member name="M:NuGet.Packaging.Signing.RepositorySignPackageRequest.#ctor(System.Security.Cryptography.X509Certificates.X509Certificate2,NuGet.Common.HashAlgorithmName,NuGet.Common.HashAlgorithmName,System.Uri,System.Collections.Generic.IReadOnlyList{System.String})">
+      <summary>
+            Instantiates a new instance of the <see cref="T:NuGet.Packaging.Signing.RepositorySignPackageRequest" /> class.
+            </summary>
+      <param name="certificate">The signing certificate.</param>
+      <param name="signatureHashAlgorithm">The signature hash algorithm.</param>
+      <param name="timestampHashAlgorithm">The timestamp hash algorithm.</param>
+      <param name="v3ServiceIndexUrl">The V3 service index URL.</param>
+      <param name="packageOwners">A read-only list of package owners.</param>
+      <exception cref="T:System.ArgumentNullException">Thrown if <paramref name="certificate" />
+            is <c>null</c>.</exception>
+      <exception cref="T:System.ArgumentException">Thrown if <paramref name="signatureHashAlgorithm" />
+            is invalid.</exception>
+      <exception cref="T:System.ArgumentException">Thrown if <paramref name="timestampHashAlgorithm" />
+            is invalid.</exception>
+      <exception cref="T:System.ArgumentNullException">Thrown if <paramref name="v3ServiceIndexUrl" />
+            is <c>null</c>.</exception>
+      <exception cref="T:System.ArgumentException">Thrown if <paramref name="v3ServiceIndexUrl" />
+            is neither absolute nor HTTPS.</exception>
+      <exception cref="T:System.ArgumentException">Thrown if <paramref name="packageOwners" />
+            is either empty or contains an invalid value.</exception>
+    </member>
+    <member name="P:NuGet.Packaging.Signing.RepositorySignPackageRequest.V3ServiceIndexUrl">
+      <summary>
+            Gets the repository V3 service index URL.
+            </summary>
+    </member>
+    <member name="P:NuGet.Packaging.Signing.RepositorySignPackageRequest.PackageOwners">
+      <summary>
+            Gets a read-only list of package owners.
+            </summary>
+    </member>
+    <member name="P:NuGet.Packaging.Signing.RepositorySignPackageRequest.SignatureType">
+      <summary>
+            Gets the signature type.
+            </summary>
+    </member>
+    <member name="M:NuGet.Packaging.Signing.SigningOptions.#ctor(System.Lazy{System.IO.Stream},System.Lazy{System.IO.Stream},System.Boolean,NuGet.Packaging.Signing.ISignatureProvider,NuGet.Common.ILogger)">
+      <summary>Instantiates a new <see cref="T:NuGet.Packaging.Signing.SigningOptions" /> object.</summary>
+      <param name="inputPackageStream">A readable stream for the package that will be used as input for any
+            signing operation.</param>
+      <param name="outputPackageStream">A readable and writeable stream for the output package for any signing
+            operation.</param>
+      <param name="overwrite">A flag indicating if an existing signature should be overwritten.</param>
+      <param name="signatureProvider">A provider to create a Signature that can be added to the package.</param>
+      <param name="logger">A logger.</param>
+      <remarks>Signing operations cannot be done in place; therefore, <paramref name="inputPackageStream" />
+            and <paramref name="outputPackageStream" /> should be different streams.</remarks>
+      <exception cref="T:System.ArgumentNullException">Thrown if <paramref name="inputPackageStream" /> is <c>null</c>.</exception>
+      <exception cref="T:System.ArgumentNullException">Thrown if <paramref name="outputPackageStream" /> is <c>null</c>.</exception>
+      <exception cref="T:System.ArgumentNullException">Thrown if <paramref name="signatureProvider" /> is <c>null</c>.</exception>
+      <exception cref="T:System.ArgumentNullException">Thrown if <paramref name="logger" /> is <c>null</c>.</exception>
+      <exception cref="T:System.ArgumentException">Thrown if <paramref name="inputPackageStream" /> and
+            <paramref name="outputPackageStream" /> are the same object.</exception>
+    </member>
+    <member name="M:NuGet.Packaging.Signing.SigningOptions.CreateFromFilePaths(System.String,System.String,System.Boolean,NuGet.Packaging.Signing.ISignatureProvider,NuGet.Common.ILogger)">
+      <summary>Creates a new <see cref="T:NuGet.Packaging.Signing.SigningOptions" /> object from file paths.</summary>
+      <param name="inputPackageFilePath">The file path of the package that will be used as input for any
+            signing operation.</param>
+      <param name="outputPackageFilePath">The file path of the package that will be the output for any signing
+            operation.</param>
+      <param name="overwrite">A flag indicating if an existing signature should be overwritten.</param>
+      <param name="signatureProvider">A provider to create a Signature that can be added to the package.</param>
+      <param name="logger">A logger.</param>
+      <remarks>Signing operations cannot be done in place; therefore, <paramref name="inputPackageFilePath" />
+            and <paramref name="outputPackageFilePath" /> should be different file paths.</remarks>
+      <exception cref="T:System.ArgumentException">Thrown if <paramref name="inputPackageFilePath" /> is <c>null</c>,
+            an empty string, or equivalent to <paramref name="outputPackageFilePath" />.</exception>
+      <exception cref="T:System.ArgumentException">Thrown if <paramref name="inputPackageFilePath" /> is <c>null</c>,
+            an empty string, or equivalent to <paramref name="outputPackageFilePath" />.</exception>
+      <exception cref="T:System.ArgumentNullException">Thrown if <paramref name="signatureProvider" /> is <c>null</c>.</exception>
+      <exception cref="T:System.ArgumentNullException">Thrown if <paramref name="logger" /> is <c>null</c>.</exception>
+    </member>
+    <member name="P:NuGet.Packaging.Signing.SigningOptions.InputPackageStream">
+      <summary>
+            Readable stream for the package that will be used as an input for any signing operation.
+            </summary>
+    </member>
+    <member name="P:NuGet.Packaging.Signing.SigningOptions.OutputPackageStream">
+      <summary>
+            Readable and writeable stream for the output package for any signing operation.
+            </summary>
+    </member>
+    <member name="P:NuGet.Packaging.Signing.SigningOptions.Overwrite">
+      <summary>
+            Switch used to indicate if an existing signature should be overwritten.
+            </summary>
+    </member>
+    <member name="P:NuGet.Packaging.Signing.SigningOptions.SignatureProvider">
+      <summary>
+            Provider to create a Signature that can be added to the package.
+            </summary>
+    </member>
+    <member name="P:NuGet.Packaging.Signing.SigningOptions.Logger">
+      <summary>
+            Logger to be used to display the logs during the execution of signing actions.
+            </summary>
+    </member>
+    <member name="T:NuGet.Packaging.Signing.SignPackageRequest">
+      <summary>
+            Contains a request for generating package signature.
+            </summary>
     </member>
     <member name="M:NuGet.Packaging.Signing.SignPackageRequest.Dispose">
       <summary>
@@ -10085,14 +10548,14 @@
             Gets a collection of additional certificates for building a chain for the signing certificate.
             </summary>
     </member>
-    <member name="P:NuGet.Packaging.Signing.SignPackageRequest.PrivateKey">
-      <summary>
-            PrivateKey is only used in mssign command.
-            </summary>
-    </member>
     <member name="P:NuGet.Packaging.Signing.SignPackageRequest.SignatureType">
       <summary>
             Gets the signature type.
+            </summary>
+    </member>
+    <member name="P:NuGet.Packaging.Signing.SignPackageRequest.PrivateKey">
+      <summary>
+            PrivateKey is only used in mssign command.
             </summary>
     </member>
     <member name="T:NuGet.Packaging.Signing.X509SignatureProvider">
@@ -10100,9 +10563,14 @@
             Sign a manifest hash with an X509Certificate2.
             </summary>
     </member>
-    <member name="M:NuGet.Packaging.Signing.X509SignatureProvider.CreateSignatureAsync(NuGet.Packaging.Signing.SignPackageRequest,NuGet.Packaging.Signing.SignatureContent,NuGet.Common.ILogger,System.Threading.CancellationToken)">
+    <member name="M:NuGet.Packaging.Signing.X509SignatureProvider.CreatePrimarySignatureAsync(NuGet.Packaging.Signing.SignPackageRequest,NuGet.Packaging.Signing.SignatureContent,NuGet.Common.ILogger,System.Threading.CancellationToken)">
       <summary>
             Sign the package stream hash with an X509Certificate2.
+            </summary>
+    </member>
+    <member name="M:NuGet.Packaging.Signing.X509SignatureProvider.CreateRepositoryCountersignatureAsync(NuGet.Packaging.Signing.RepositorySignPackageRequest,NuGet.Packaging.Signing.PrimarySignature,NuGet.Common.ILogger,System.Threading.CancellationToken)">
+      <summary>
+            Countersign the primary signature with a X509Certificate2.
             </summary>
     </member>
     <member name="M:NuGet.Packaging.Signing.KeyPairFileReader.ReadSection">
@@ -10111,11 +10579,6 @@
             Throw for invalid formats.
             </summary>
       <remarks>Returns an empty set if the file has reached the end.</remarks>
-    </member>
-    <member name="F:NuGet.Packaging.Signing.KeyPairFileUtility.Encoding">
-      <summary>
-            File encoding.
-            </summary>
     </member>
     <member name="M:NuGet.Packaging.Signing.KeyPairFileUtility.GetValueOrThrow(System.Collections.Generic.Dictionary{System.String,System.String},System.String)">
       <summary>
@@ -10187,7 +10650,7 @@
             A readonly package that can provide signatures and a sign manifest from a package.
             </summary>
     </member>
-    <member name="M:NuGet.Packaging.Signing.ISignedPackageReader.GetSignatureAsync(System.Threading.CancellationToken)">
+    <member name="M:NuGet.Packaging.Signing.ISignedPackageReader.GetPrimarySignatureAsync(System.Threading.CancellationToken)">
       <summary>
             Get package signature.
             </summary>
@@ -10294,46 +10757,91 @@
     <member name="T:NuGet.Packaging.Signing.IssuerSerial">
       <remarks>This is public only to facilitate testing.</remarks>
     </member>
+    <member name="T:NuGet.Packaging.Signing.NuGetPackageOwners">
+      <remarks>This is public only to facilitate testing.</remarks>
+    </member>
+    <member name="T:NuGet.Packaging.Signing.NuGetV3ServiceIndexUrl">
+      <remarks>This is public only to facilitate testing.</remarks>
+    </member>
     <member name="T:NuGet.Packaging.Signing.PolicyInformation">
       <remarks>This is public only to facilitate testing.</remarks>
     </member>
     <member name="T:NuGet.Packaging.Signing.PolicyQualifierInfo">
       <remarks>This is public only to facilitate testing.</remarks>
     </member>
-    <member name="T:NuGet.Packaging.Signing.Signature">
-      <summary>
-            Package signature information.
-            </summary>
-    </member>
-    <member name="M:NuGet.Packaging.Signing.Signature.Save(System.IO.Stream)">
+    <member name="M:NuGet.Packaging.Signing.PrimarySignature.Save(System.IO.Stream)">
       <summary>
             Save the signed cms signature to a stream.
             </summary>
       <param name="stream">
       </param>
     </member>
-    <member name="M:NuGet.Packaging.Signing.Signature.GetBytes">
+    <member name="M:NuGet.Packaging.Signing.PrimarySignature.GetBytes">
       <summary>
             Retrieve the bytes of the signed cms signature.
             </summary>
     </member>
-    <member name="M:NuGet.Packaging.Signing.Signature.Load(System.Security.Cryptography.Pkcs.SignedCms)">
+    <member name="M:NuGet.Packaging.Signing.PrimarySignature.Load(System.Security.Cryptography.Pkcs.SignedCms)">
       <summary>
             Create a signature based on a valid signed cms
             </summary>
       <param name="cms">signature data</param>
     </member>
-    <member name="M:NuGet.Packaging.Signing.Signature.Load(System.Byte[])">
+    <member name="M:NuGet.Packaging.Signing.PrimarySignature.Load(System.Byte[])">
       <summary>
             Create a signature based on a valid byte array to be decoded as a signed cms
             </summary>
       <param name="data">signature data</param>
     </member>
-    <member name="M:NuGet.Packaging.Signing.Signature.Load(System.IO.Stream)">
+    <member name="M:NuGet.Packaging.Signing.PrimarySignature.Load(System.IO.Stream)">
       <summary>
             Create a signature based on a valid byte stream to be decoded as a signed cms
             </summary>
       <param name="stream">signature data</param>
+    </member>
+    <member name="P:NuGet.Packaging.Signing.PrimarySignature.SignedCms">
+      <summary>
+            A SignedCms object holding the signature and SignerInfo.
+            </summary>
+    </member>
+    <member name="P:NuGet.Packaging.Signing.PrimarySignature.SignatureContent">
+      <summary>
+            Signature content.
+            </summary>
+    </member>
+    <member name="T:NuGet.Packaging.Signing.Signature">
+      <summary>
+            Package signature information.
+            </summary>
+    </member>
+    <member name="M:NuGet.Packaging.Signing.Signature.GetValidTimestamp(NuGet.Packaging.Signing.SignedPackageVerifierSettings,NuGet.Common.HashAlgorithmName,System.Collections.Generic.List{NuGet.Packaging.Signing.SignatureLog})">
+      <summary>
+      </summary>
+      <param name="allowMultipleTimestamps">
+      </param>
+      <param name="allowIgnoreTimestamp">
+      </param>
+      <param name="allowNoTimestamp">
+      </param>
+      <param name="allowUnknownRevocation">
+      </param>
+      <param name="issues">
+      </param>
+      <returns>
+      </returns>
+    </member>
+    <member name="M:NuGet.Packaging.Signing.Signature.Verify(NuGet.Packaging.Signing.Timestamp,NuGet.Packaging.Signing.SignedPackageVerifierSettings,NuGet.Common.HashAlgorithmName,System.Security.Cryptography.X509Certificates.X509Certificate2Collection,System.Collections.Generic.List{NuGet.Packaging.Signing.SignatureLog})">
+      <summary>
+            Verify if the signature object meets the specification trust and validity requirements.
+            </summary>
+      <param name="timestamp">Timestamp for this signature, if signature is not timestamped it can be null.</param>
+      <param name="allowUntrusted">Setting that tells if a signature that does not meet any soft failure requirements can still be allowed. Used to know if warnings or errors should be logged for an issue.</param>
+      <param name="allowUnknownRevocation">Setting that tells if unkown revocation is valid when building the chain.</param>
+      <param name="allowUntrustedSelfSignedCertificate">Setting that tells if an untrusted self-signed certificate should be allowed as the signing certificate.</param>
+      <param name="fingerprintAlgorithm">Algorithm used to calculate and display the certificate's fingerprint.</param>
+      <param name="certificateExtraStore">Collection of certificates to help the chain building engine as an extra store.</param>
+      <param name="issues">List of log messages.</param>
+      <returns>Status of trust for signature.</returns>
     </member>
     <member name="M:NuGet.Packaging.Signing.Signature.GetTimestamps(System.Security.Cryptography.Pkcs.SignerInfo)">
       <summary>
@@ -10344,19 +10852,9 @@
       <returns>
       </returns>
     </member>
-    <member name="P:NuGet.Packaging.Signing.Signature.SignedCms">
-      <summary>
-            A SignedCms object holding the signature and SignerInfo.
-            </summary>
-    </member>
     <member name="P:NuGet.Packaging.Signing.Signature.Type">
       <summary>
             Indicates if this is an author or repository signature.
-            </summary>
-    </member>
-    <member name="P:NuGet.Packaging.Signing.Signature.SignatureContent">
-      <summary>
-            Signature content.
             </summary>
     </member>
     <member name="P:NuGet.Packaging.Signing.Signature.Timestamps">
@@ -10367,6 +10865,21 @@
     <member name="P:NuGet.Packaging.Signing.Signature.SignerInfo">
       <summary>
             SignerInfo for this signature.
+            </summary>
+    </member>
+    <member name="T:NuGet.Packaging.Signing.SignaturePlacement">
+      <summary>
+            Indicates signature placement.
+            </summary>
+    </member>
+    <member name="F:NuGet.Packaging.Signing.SignaturePlacement.PrimarySignature">
+      <summary>
+            The primary signature.
+            </summary>
+    </member>
+    <member name="F:NuGet.Packaging.Signing.SignaturePlacement.Countersignature">
+      <summary>
+            A countersignature on the primary signature.
             </summary>
     </member>
     <member name="T:NuGet.Packaging.Signing.SignatureType">
@@ -10473,12 +10986,12 @@
             https://tools.ietf.org/html/rfc3161
             </summary>
     </member>
-    <member name="M:NuGet.Packaging.Signing.Rfc3161TimestampProvider.TimestampSignatureAsync(NuGet.Packaging.Signing.TimestampRequest,NuGet.Common.ILogger,System.Threading.CancellationToken)">
+    <member name="M:NuGet.Packaging.Signing.Rfc3161TimestampProvider.TimestampSignatureAsync(NuGet.Packaging.Signing.PrimarySignature,NuGet.Packaging.Signing.TimestampRequest,NuGet.Common.ILogger,System.Threading.CancellationToken)">
       <summary>
             Timestamps data present in the TimestampRequest.
             </summary>
     </member>
-    <member name="M:NuGet.Packaging.Signing.Rfc3161TimestampProvider.TimestampData(NuGet.Packaging.Signing.TimestampRequest,NuGet.Common.ILogger,System.Threading.CancellationToken)">
+    <member name="M:NuGet.Packaging.Signing.Rfc3161TimestampProvider.GetTimestamp(NuGet.Packaging.Signing.TimestampRequest,NuGet.Common.ILogger,System.Threading.CancellationToken)">
       <summary>
             Timestamps data present in the TimestampRequest.
             </summary>
@@ -10534,6 +11047,16 @@
             </summary>
       <param name="timestampCms">SignedCms from Time Stamp Authority</param>
     </member>
+    <member name="M:NuGet.Packaging.Signing.Timestamp.Verify(NuGet.Packaging.Signing.Signature,NuGet.Packaging.Signing.SignedPackageVerifierSettings,NuGet.Common.HashAlgorithmName,System.Collections.Generic.List{NuGet.Packaging.Signing.SignatureLog})">
+      <summary>
+            Verify if the timestamp object meets the specification requirements.
+            </summary>
+      <param name="signature">Signature which this timestamp is for.</param>
+      <param name="allowIgnoreTimestamp">Setting that tells if a timestamp can be ignored if it doesn't meet the requirements. Used to know if warnings or errors should be logged for an issue.</param>
+      <param name="allowUnknownRevocation">Setting that tells if unkown revocation is valid when building the chain.</param>
+      <param name="issues">List of log messages.</param>
+      <returns>true if the timestamp meets the requierements, false otherwise.</returns>
+    </member>
     <member name="P:NuGet.Packaging.Signing.Timestamp.UpperLimit">
       <summary>
             Upper limit of Timestamp.
@@ -10574,19 +11097,24 @@
             Request for timestamping a signature
             </summary>
     </member>
-    <member name="P:NuGet.Packaging.Signing.TimestampRequest.SignatureValue">
-      <summary>
-            Signature that needs to be timestamped.
-            </summary>
-    </member>
-    <member name="P:NuGet.Packaging.Signing.TimestampRequest.TimestampHashAlgorithm">
-      <summary>
-            Hash algorithm to be used for timestamping.
-            </summary>
-    </member>
-    <member name="P:NuGet.Packaging.Signing.TimestampRequest.SigningSpec">
+    <member name="P:NuGet.Packaging.Signing.TimestampRequest.SigningSpecifications">
       <summary>
             Signing Specification for this timestamp request.
+            </summary>
+    </member>
+    <member name="P:NuGet.Packaging.Signing.TimestampRequest.HashedMessage">
+      <summary>
+            Gets the hashed message to be timestamped.
+            </summary>
+    </member>
+    <member name="P:NuGet.Packaging.Signing.TimestampRequest.HashAlgorithm">
+      <summary>
+            Gets the hash algorithm used to generate <see cref="P:NuGet.Packaging.Signing.TimestampRequest.HashedMessage" />.
+            </summary>
+    </member>
+    <member name="P:NuGet.Packaging.Signing.TimestampRequest.Target">
+      <summary>
+            Gets the target signature for the timestamp
             </summary>
     </member>
     <member name="T:NuGet.Packaging.Signing.TstInfo">
@@ -10607,6 +11135,46 @@
       <remarks>Unknown OIDs are ignored.</remarks>
       <exception cref="T:System.ArgumentNullException">Thrown if <paramref name="signedAttributes" /> is <c>null</c>.</exception>
       <exception cref="T:NuGet.Packaging.Signing.SignatureException">Thrown if one or more attributes are invalid.</exception>
+    </member>
+    <member name="M:NuGet.Packaging.Signing.AttributeUtility.CreateNuGetV3ServiceIndexUrl(System.Uri)">
+      <summary>
+            Creates a nuget-v3-service-index-url attribute.
+            </summary>
+      <param name="v3ServiceIndexUrl">The V3 service index HTTPS URL.</param>
+      <returns>An attribute object.</returns>
+      <exception cref="T:System.ArgumentNullException">Thrown if <paramref name="v3ServiceIndexUrl" /> is null.</exception>
+      <exception cref="T:System.ArgumentException">Thrown if <paramref name="v3ServiceIndexUrl" /> is neither absolute
+            nor HTTPS.</exception>
+    </member>
+    <member name="M:NuGet.Packaging.Signing.AttributeUtility.GetNuGetV3ServiceIndexUrl(System.Security.Cryptography.CryptographicAttributeObjectCollection)">
+      <summary>
+            Gets the V3 service index HTTPS URL from the nuget-v3-service-index-url attribute.
+            </summary>
+      <param name="signedAttributes">A <see cref="T:System.Security.Cryptography.Pkcs.SignerInfo" /> signed attributes collection.</param>
+      <returns>The V3 service index HTTPS URL.</returns>
+      <exception cref="T:System.ArgumentNullException">Thrown if <paramref name="signedAttributes" />
+            is <c>null</c>.</exception>
+      <exception cref="T:NuGet.Packaging.Signing.SignatureException">Thrown if either exactly one attribute is not present or if
+            the attribute does not contain exactly one attribute value.</exception>
+    </member>
+    <member name="M:NuGet.Packaging.Signing.AttributeUtility.CreateNuGetPackageOwners(System.Collections.Generic.IReadOnlyList{System.String})">
+      <summary>
+            Creates a nuget-package-owners attribute.
+            </summary>
+      <param name="packageOwners">A read-only list of package owners.</param>
+      <returns>An attribute object.</returns>
+      <exception cref="T:System.ArgumentException">Thrown if <paramref name="packageOwners" /> is either <c>null</c>
+            or empty or if any package owner name is invalid.</exception>
+    </member>
+    <member name="M:NuGet.Packaging.Signing.AttributeUtility.GetNuGetPackageOwners(System.Security.Cryptography.CryptographicAttributeObjectCollection)">
+      <summary>
+            Gets a read-only list of package owners from an optional nuget-package-owners attribute.
+            </summary>
+      <param name="signedAttributes">A <see cref="T:System.Security.Cryptography.Pkcs.SignerInfo" /> signed attributes collection.</param>
+      <returns>A read-only list of package owners or <c>null</c>.</returns>
+      <exception cref="T:System.ArgumentNullException">Thrown if <paramref name="signedAttributes" /> is <c>null</c>.</exception>
+      <exception cref="T:NuGet.Packaging.Signing.SignatureException">Thrown if the attribute does not contain exactly one
+            attribute value.</exception>
     </member>
     <member name="M:NuGet.Packaging.Signing.AttributeUtility.GetSignatureType(System.String)">
       <summary>
@@ -10679,6 +11247,7 @@
             for chain building.</param>
       <param name="logger">A logger.</param>
       <param name="certificateType">The certificate type.</param>
+      <returns>A certificate chain.</returns>
       <remarks>This is intended to be used only during signing and timestamping operations,
             not verification.</remarks>
       <exception cref="T:System.ArgumentNullException">Thrown if <paramref name="certificate" /> is <c>null</c>.</exception>
@@ -10686,11 +11255,11 @@
       <exception cref="T:System.ArgumentNullException">Thrown if <paramref name="logger" /> is <c>null</c>.</exception>
       <exception cref="T:System.ArgumentException">Thrown if <paramref name="certificateType" /> is undefined.</exception>
     </member>
-    <member name="M:NuGet.Packaging.Signing.CertificateChainUtility.GetCertificateListFromChain(System.Security.Cryptography.X509Certificates.X509Chain)">
+    <member name="M:NuGet.Packaging.Signing.CertificateChainUtility.GetCertificateChain(System.Security.Cryptography.X509Certificates.X509Chain)">
       <summary>
             Create an ordered list of certificates. The leaf node is returned first.
             </summary>
-      <param name="certChain">Certificate chain to be converted to list.</param>
+      <param name="x509Chain">Certificate chain to be converted to list.</param>
       <remarks>This does not check validity or trust. It returns the chain as-is.</remarks>
     </member>
     <member name="M:NuGet.Packaging.Signing.CertificateUtility.X509Certificate2ToString(System.Security.Cryptography.X509Certificates.X509Certificate2,NuGet.Common.HashAlgorithmName)">
@@ -10787,24 +11356,64 @@
         <c>true</c> if the certificate is self-issued; otherwise, <c>false</c>.</returns>
       <exception cref="T:System.ArgumentNullException">Thrown if <paramref name="certificate" /> is <c>null</c>.</exception>
     </member>
-    <member name="M:NuGet.Packaging.Signing.SignatureUtility.GetPrimarySignatureCertificates(NuGet.Packaging.Signing.Signature)">
+    <member name="M:NuGet.Packaging.Signing.RepositorySignatureInfoUtility.GetSignedPackageVerifierSettings(NuGet.Packaging.RepositorySignatureInfo,NuGet.Packaging.Signing.SignedPackageVerifierSettings)">
+      <summary>
+            Gets SignedPackageVerifierSettings from a given RepositorySignatureInfo. 
+            </summary>
+      <param name="repoSignatureInfo">RepositorySignatureInfo to be used.</param>
+      <param name="fallbackSettings">SignedPackageVerifierSettings to be used if RepositorySignatureInfo is unavailable.</param>
+      <returns>SignedPackageVerifierSettings based on the RepositorySignatureInfo and SignedPackageVerifierSettings.</returns>
+    </member>
+    <member name="M:NuGet.Packaging.Signing.SignatureUtility.GetCertificateChain(NuGet.Packaging.Signing.PrimarySignature)">
       <summary>
             Gets certificates in the certificate chain for the primary signature.
             </summary>
-      <param name="signature">The primary signature.</param>
+      <param name="primarySignature">The primary signature.</param>
       <returns>A non-empty, read-only list of X.509 certificates ordered from signing certificate to root.</returns>
-      <exception cref="T:System.ArgumentNullException">Thrown if <paramref name="signature" /> is <c>null</c>.</exception>
+      <exception cref="T:System.ArgumentNullException">Thrown if <paramref name="primarySignature" /> is <c>null</c>.</exception>
       <remarks>
             WARNING:  This method does not perform revocation, trust, or certificate validity checking.
             </remarks>
     </member>
-    <member name="M:NuGet.Packaging.Signing.SignatureUtility.GetPrimarySignatureTimestampSignatureCertificates(NuGet.Packaging.Signing.Signature)">
+    <member name="M:NuGet.Packaging.Signing.SignatureUtility.GetCertificateChain(NuGet.Packaging.Signing.PrimarySignature,NuGet.Packaging.Signing.RepositoryCountersignature)">
+      <summary>
+            Gets certificates in the certificate chain for the repository countersignature.
+            </summary>
+      <param name="primarySignature">The primary signature.</param>
+      <param name="repositoryCountersignature">The repository countersignature.</param>
+      <returns>A non-empty, read-only list of X.509 certificates ordered from signing certificate to root.</returns>
+      <exception cref="T:System.ArgumentNullException">Thrown if <paramref name="primarySignature" /> is <c>null</c>.</exception>
+      <exception cref="T:System.ArgumentNullException">Thrown if <paramref name="repositoryCountersignature" /> is <c>null</c>.</exception>
+      <exception cref="T:System.ArgumentException">Thrown if <paramref name="repositoryCountersignature" /> is
+            unrelated to <paramref name="primarySignature" />.</exception>
+      <remarks>
+            WARNING:  This method does not perform revocation, trust, or certificate validity checking.
+            </remarks>
+    </member>
+    <member name="M:NuGet.Packaging.Signing.SignatureUtility.GetTimestampCertificateChain(NuGet.Packaging.Signing.PrimarySignature)">
       <summary>
             Gets certificates in the certificate chain for a timestamp on the primary signature.
             </summary>
-      <param name="signature">The primary signature.</param>
+      <param name="primarySignature">The primary signature.</param>
       <returns>A non-empty, read-only list of X.509 certificates ordered from signing certificate to root.</returns>
-      <exception cref="T:System.ArgumentNullException">Thrown if <paramref name="signature" /> is <c>null</c>.</exception>
+      <exception cref="T:System.ArgumentNullException">Thrown if <paramref name="primarySignature" /> is <c>null</c>.</exception>
+      <exception cref="T:NuGet.Packaging.Signing.SignatureException">Thrown if <paramref name="primarySignature" /> does not have a valid
+            timestamp.</exception>
+      <remarks>
+            WARNING:  This method does not perform revocation, trust, or certificate validity checking.
+            </remarks>
+    </member>
+    <member name="M:NuGet.Packaging.Signing.SignatureUtility.GetTimestampCertificateChain(NuGet.Packaging.Signing.PrimarySignature,NuGet.Packaging.Signing.RepositoryCountersignature)">
+      <summary>
+            Gets certificates in the certificate chain for a timestamp on the repository countersignature.
+            </summary>
+      <param name="primarySignature">The primary signature.</param>
+      <param name="repositoryCountersignature">The repository countersignature.</param>
+      <returns>A non-empty, read-only list of X.509 certificates ordered from signing certificate to root.</returns>
+      <exception cref="T:System.ArgumentNullException">Thrown if <paramref name="primarySignature" /> is <c>null</c>.</exception>
+      <exception cref="T:System.ArgumentNullException">Thrown if <paramref name="repositoryCountersignature" /> is <c>null</c>.</exception>
+      <exception cref="T:NuGet.Packaging.Signing.SignatureException">Thrown if <paramref name="repositoryCountersignature" /> does not have a valid
+            timestamp.</exception>
       <remarks>
             WARNING:  This method does not perform revocation, trust, or certificate validity checking.
             </remarks>
@@ -10812,6 +11421,11 @@
     <member name="T:NuGet.Packaging.Signing.SigningUtility">
       <summary>
             Utility methods for signing.
+            </summary>
+    </member>
+    <member name="M:NuGet.Packaging.Signing.SigningUtility.SignAsync(NuGet.Packaging.Signing.SigningOptions,NuGet.Packaging.Signing.SignPackageRequest,System.Threading.CancellationToken)">
+      <summary>
+            Add a signature to a package.
             </summary>
     </member>
     <member name="T:NuGet.Packaging.Signing.X509ChainHolder">
@@ -10823,22 +11437,32 @@
             finalizer impact.
             </remarks>
     </member>
+    <member name="T:NuGet.Packaging.Signing.IPackageSignatureVerifier">
+      <summary>
+            Loads trust providers and verifies package signatures.
+            </summary>
+    </member>
+    <member name="M:NuGet.Packaging.Signing.IPackageSignatureVerifier.VerifySignaturesAsync(NuGet.Packaging.Signing.ISignedPackageReader,NuGet.Packaging.Signing.SignedPackageVerifierSettings,System.Threading.CancellationToken,System.Guid)">
+      <summary>
+            Verifies package signature.
+            </summary>
+      <param name="package">Package to be verified.</param>
+      <param name="settings">SignedPackageVerifierSettings to be used when verifying the package.</param>
+      <param name="token">Cancellation Token.</param>
+      <param name="telemetryOperationId">Guid of the parent event.</param>
+      <returns>VerifySignaturesResult containing the result of the verify operation.</returns>
+    </member>
     <member name="T:NuGet.Packaging.Signing.ISignatureVerificationProvider">
       <summary>
             Providers signature trust information.
             </summary>
     </member>
-    <member name="M:NuGet.Packaging.Signing.ISignatureVerificationProvider.GetTrustResultAsync(NuGet.Packaging.Signing.ISignedPackageReader,NuGet.Packaging.Signing.Signature,NuGet.Packaging.Signing.SignedPackageVerifierSettings,System.Threading.CancellationToken)">
+    <member name="M:NuGet.Packaging.Signing.ISignatureVerificationProvider.GetTrustResultAsync(NuGet.Packaging.Signing.ISignedPackageReader,NuGet.Packaging.Signing.PrimarySignature,NuGet.Packaging.Signing.SignedPackageVerifierSettings,System.Threading.CancellationToken)">
       <summary>
             Check if <paramref name="signature" /> is trusted by the provider.
             </summary>
     </member>
-    <member name="T:NuGet.Packaging.Signing.PackageSignatureVerifier">
-      <summary>
-            Loads trust providers and verifies package signatures.
-            </summary>
-    </member>
-    <member name="M:NuGet.Packaging.Signing.PackageSignatureVerifier.IsValid(System.Collections.Generic.IEnumerable{NuGet.Packaging.Signing.PackageVerificationResult},System.Boolean)">
+    <member name="M:NuGet.Packaging.Signing.PackageSignatureVerifier.IsValid(System.Collections.Generic.IEnumerable{NuGet.Packaging.Signing.PackageVerificationResult},NuGet.Packaging.Signing.SignedPackageVerifierSettings)">
       <summary>
             True if a provider trusts the package signature.
             </summary>
@@ -10874,20 +11498,25 @@
             Default unknown value.
             </summary>
     </member>
-    <member name="F:NuGet.Packaging.Signing.SignatureVerificationStatus.Invalid">
+    <member name="F:NuGet.Packaging.Signing.SignatureVerificationStatus.Suspect">
       <summary>
-            Invalid signature.
+            Invalid package signature.
             </summary>
-      <remarks>This could happen for many reasons such as a tampered with package, invalid hash algorithm, or invalid signing data.</remarks>
+      <remarks>This could happen because the package integrity check fails or the certificate is revoked.</remarks>
+    </member>
+    <member name="F:NuGet.Packaging.Signing.SignatureVerificationStatus.Illegal">
+      <summary>
+            Signature does not conform with NuGet signing specification.
+            </summary>
     </member>
     <member name="F:NuGet.Packaging.Signing.SignatureVerificationStatus.Untrusted">
       <summary>
-            Signature is NOT trusted.
+            Signature certificate does not match known allowlists.
             </summary>
     </member>
-    <member name="F:NuGet.Packaging.Signing.SignatureVerificationStatus.Trusted">
+    <member name="F:NuGet.Packaging.Signing.SignatureVerificationStatus.Valid">
       <summary>
-            Signature is trusted.
+            Signature is valid for the verification step.
             </summary>
     </member>
     <member name="P:NuGet.Packaging.Signing.SignedPackageVerificationResult.Signature">
@@ -10900,14 +11529,54 @@
             Feed settings used to verify packages.
             </summary>
     </member>
+    <member name="M:NuGet.Packaging.Signing.SignedPackageVerifierSettings.GetDefault(System.Collections.Generic.IReadOnlyList{NuGet.Packaging.Signing.VerificationAllowListEntry},System.Collections.Generic.IReadOnlyList{NuGet.Packaging.Signing.VerificationAllowListEntry})">
+      <summary>
+            Default settings.
+            </summary>
+    </member>
+    <member name="M:NuGet.Packaging.Signing.SignedPackageVerifierSettings.GetVSClientDefaultPolicy(System.Collections.Generic.IReadOnlyList{NuGet.Packaging.Signing.VerificationAllowListEntry},System.Collections.Generic.IReadOnlyList{NuGet.Packaging.Signing.VerificationAllowListEntry})">
+      <summary>
+            Default policy for scenarios in VS.
+            </summary>
+    </member>
+    <member name="M:NuGet.Packaging.Signing.SignedPackageVerifierSettings.GetVerifyCommandDefaultPolicy(System.Collections.Generic.IReadOnlyList{NuGet.Packaging.Signing.VerificationAllowListEntry},System.Collections.Generic.IReadOnlyList{NuGet.Packaging.Signing.VerificationAllowListEntry})">
+      <summary>
+            Default policy for nuget.exe verify --signatures command.
+            </summary>
+    </member>
     <member name="P:NuGet.Packaging.Signing.SignedPackageVerifierSettings.AllowUnsigned">
       <summary>
             Allow packages that do not contain signatures.
             </summary>
     </member>
+    <member name="P:NuGet.Packaging.Signing.SignedPackageVerifierSettings.AllowIllegal">
+      <summary>
+            Allow packages with signatures that do not conform to the specification.
+            </summary>
+    </member>
     <member name="P:NuGet.Packaging.Signing.SignedPackageVerifierSettings.AllowUntrusted">
       <summary>
-            Allow packages that are not trusted.
+            Allow packages that have not been explicitly trusted by the consumer.
+            </summary>
+    </member>
+    <member name="P:NuGet.Packaging.Signing.SignedPackageVerifierSettings.AllowUntrustedSelfIssuedCertificate">
+      <summary>
+            Allow packages that do not chain to a trusted root certificate.
+            </summary>
+    </member>
+    <member name="P:NuGet.Packaging.Signing.SignedPackageVerifierSettings.AllowIgnoreTimestamp">
+      <summary>
+            Allow ignoring timestamp.
+            </summary>
+    </member>
+    <member name="P:NuGet.Packaging.Signing.SignedPackageVerifierSettings.AllowMultipleTimestamps">
+      <summary>
+            Allow more than one timestamp.
+            </summary>
+    </member>
+    <member name="P:NuGet.Packaging.Signing.SignedPackageVerifierSettings.AllowNoTimestamp">
+      <summary>
+            Allow no timestamp.
             </summary>
     </member>
     <member name="P:NuGet.Packaging.Signing.SignedPackageVerifierSettings.AllowUnknownRevocation">
@@ -10915,24 +11584,24 @@
             Treat unknown revocation status as a warning instead of an error during verification.
             </summary>
     </member>
-    <member name="P:NuGet.Packaging.Signing.SignedPackageVerifierSettings.AllowAll">
+    <member name="P:NuGet.Packaging.Signing.SignedPackageVerifierSettings.AllowNoRepositoryCertificateList">
       <summary>
-            Allow unsigned.
+            Allow an empty or null RepositoryCertificateList.
             </summary>
     </member>
-    <member name="P:NuGet.Packaging.Signing.SignedPackageVerifierSettings.Default">
+    <member name="P:NuGet.Packaging.Signing.SignedPackageVerifierSettings.AllowNoClientCertificateList">
       <summary>
-            Default settings.
+            Allow an empty or null ClientCertificateList.
             </summary>
     </member>
-    <member name="P:NuGet.Packaging.Signing.SignedPackageVerifierSettings.VSClientDefaultPolicy">
+    <member name="P:NuGet.Packaging.Signing.SignedPackageVerifierSettings.RepositoryCertificateList">
       <summary>
-            Default policy for scenarios in VS
+            Allowlist of repository certificates hashes.
             </summary>
     </member>
-    <member name="P:NuGet.Packaging.Signing.SignedPackageVerifierSettings.VerifyCommandDefaultPolicy">
+    <member name="P:NuGet.Packaging.Signing.SignedPackageVerifierSettings.ClientCertificateList">
       <summary>
-            Default policy for nuget.exe verify --signatures command
+            Allowlist of client side certificate hashes.
             </summary>
     </member>
     <member name="T:NuGet.Packaging.Signing.VerifySignaturesResult">
@@ -11224,6 +11893,123 @@
               Looks up a localized string similar to The string contains a character not in the 7 bit ASCII character set..
             </summary>
     </member>
+    <member name="T:NuGet.Packaging.Rules.AnalysisResources">
+      <summary>
+              A strongly-typed resource class, for looking up localized strings, etc.
+            </summary>
+    </member>
+    <member name="P:NuGet.Packaging.Rules.AnalysisResources.ResourceManager">
+      <summary>
+              Returns the cached ResourceManager instance used by this class.
+            </summary>
+    </member>
+    <member name="P:NuGet.Packaging.Rules.AnalysisResources.Culture">
+      <summary>
+              Overrides the current thread's CurrentUICulture property for all
+              resource lookups using this strongly typed resource class.
+            </summary>
+    </member>
+    <member name="P:NuGet.Packaging.Rules.AnalysisResources.AssemblyDirectlyUnderLibWarning">
+      <summary>
+              Looks up a localized string similar to The assembly '{0}' is placed directly under 'lib' folder. It is recommended that assemblies be placed inside a framework-specific folder. Move it into a framework-specific folder..
+            </summary>
+    </member>
+    <member name="P:NuGet.Packaging.Rules.AnalysisResources.AssemblyOutsideLibWarning">
+      <summary>
+              Looks up a localized string similar to The assembly '{0}' is not inside the 'lib' folder and hence it won't be added as a reference when the package is installed into a project. Move it into the 'lib' folder if it needs to be referenced..
+            </summary>
+    </member>
+    <member name="P:NuGet.Packaging.Rules.AnalysisResources.DefaultSpecValueWarning">
+      <summary>
+              Looks up a localized string similar to The value "{0}" for {1} is a sample value and should be removed. Replace it with an appropriate value or remove it and rebuild your package..
+            </summary>
+    </member>
+    <member name="P:NuGet.Packaging.Rules.AnalysisResources.InvalidFrameworkWarning">
+      <summary>
+              Looks up a localized string similar to The folder '{0}' under 'lib' is not recognized as a valid framework name or a supported culture identifier. Rename it to a valid framework name or culture identifier..
+            </summary>
+    </member>
+    <member name="P:NuGet.Packaging.Rules.AnalysisResources.InvalidPrereleaseDependencyWarning">
+      <summary>
+              Looks up a localized string similar to A stable release of a package should not have a prerelease dependency. Either modify the version spec of dependency "{0}" or update the version field in the nuspec..
+            </summary>
+    </member>
+    <member name="P:NuGet.Packaging.Rules.AnalysisResources.LegacyVersionWarning">
+      <summary>
+              Looks up a localized string similar to The package version '{0}' uses SemVer 2.0.0 or components of SemVer 1.0.0 that are not supported on legacy clients. Change the package version to a SemVer 1.0.0 string. If the version contains a release label it must start with a letter. This message can be ignored if the package is not intended for older clients..
+            </summary>
+    </member>
+    <member name="P:NuGet.Packaging.Rules.AnalysisResources.Migrator_AssemblyDirectlyUnderLibWarning">
+      <summary>
+              Looks up a localized string similar to The assembly 'lib\{0}' will be ignored when the package is installed after the migration..
+            </summary>
+    </member>
+    <member name="P:NuGet.Packaging.Rules.AnalysisResources.Migrator_PackageHasContentFolder">
+      <summary>
+              Looks up a localized string similar to 'content' assets will not be available when the package is installed after the migration..
+            </summary>
+    </member>
+    <member name="P:NuGet.Packaging.Rules.AnalysisResources.Migrator_PackageHasInstallScript">
+      <summary>
+              Looks up a localized string similar to install.ps1 script will be ignored when the package is installed after the migration..
+            </summary>
+    </member>
+    <member name="P:NuGet.Packaging.Rules.AnalysisResources.Migrator_XdtTransformInPackage">
+      <summary>
+              Looks up a localized string similar to XDT transform file '{0}' will not be applied when the package is installed after the migration..
+            </summary>
+    </member>
+    <member name="P:NuGet.Packaging.Rules.AnalysisResources.MisplacedInitScriptWarning">
+      <summary>
+              Looks up a localized string similar to The file '{0}' will be ignored by NuGet because it is not directly under 'tools' folder. Place the file directly under 'tools' folder..
+            </summary>
+    </member>
+    <member name="P:NuGet.Packaging.Rules.AnalysisResources.MisplacedTransformFileWarning">
+      <summary>
+              Looks up a localized string similar to The transform file '{0}' is outside the 'content' folder and hence will not be transformed during installation of this package. Move it into the 'content' folder..
+            </summary>
+    </member>
+    <member name="P:NuGet.Packaging.Rules.AnalysisResources.PlaceholderFileInPackageWarning">
+      <summary>
+              Looks up a localized string similar to An empty folder placeholder file '{0}' is in a non-empty folder and should be removed..
+            </summary>
+    </member>
+    <member name="P:NuGet.Packaging.Rules.AnalysisResources.ScriptOutsideToolsWarning">
+      <summary>
+              Looks up a localized string similar to The script file '{0}' is outside the 'tools' folder and hence will not be executed during installation of this package. Move it into the 'tools' folder..
+            </summary>
+    </member>
+    <member name="P:NuGet.Packaging.Rules.AnalysisResources.UnrecognizedScriptWarning">
+      <summary>
+              Looks up a localized string similar to The script file '{0}' is not recognized by NuGet and hence will not be executed during installation of this package. Rename it to install.ps1, uninstall.ps1 or init.ps1 and place it directly under 'tools'..
+            </summary>
+    </member>
+    <member name="P:NuGet.Packaging.Rules.AnalysisResources.UnspecifiedDependencyVersionWarning">
+      <summary>
+              Looks up a localized string similar to The version of dependency '{0}' is not specified. Specify the version of dependency and rebuild your package..
+            </summary>
+    </member>
+    <member name="P:NuGet.Packaging.Rules.AnalysisResources.WinRTObsoleteWarning">
+      <summary>
+              Looks up a localized string similar to The file at '{0}' uses the obsolete 'WinRT' as the framework folder. Replace 'WinRT' or 'WinRT45' with 'NetCore45'..
+            </summary>
+    </member>
+    <member name="T:NuGet.Packaging.Rules.LegacyVersionRule">
+      <summary>
+            Warn if the version is not parsable by older nuget clients.
+            </summary>
+      <remarks>This rule should be removed once more users move to SemVer 2.0.0 capable clients.</remarks>
+    </member>
+    <member name="P:NuGet.Packaging.Rules.MisplacedAssemblyOutsideLibRule.ValidFolders">
+      <summary>
+            Folders that are expected to have .dll and .winmd files
+            </summary>
+    </member>
+    <member name="P:NuGet.Packaging.Rules.MisplacedAssemblyUnderLibRule.ValidFolders">
+      <summary>
+            Folders that are expected to have .dll and .winmd files
+            </summary>
+    </member>
     <member name="P:NuGet.Packaging.PackageExtraction.PackageExtractionBehavior.XmlDocFileSaveMode">
       <summary>
             Gets or sets the <see cref="!:PackageExtraction.XmlDocFileSaveMode" />.
@@ -11500,7 +12286,12 @@
             Pattern used to identify content files
             </summary>
     </member>
-    <member name="M:NuGet.Shared.NuGet.ProjectModel781728.EqualityUtility.OrderedEquals``2(System.Collections.Generic.IEnumerable{``0},System.Collections.Generic.IEnumerable{``0},System.Func{``0,``1},System.Collections.Generic.IComparer{``1},System.Collections.Generic.IEqualityComparer{``0})">
+    <member name="P:NuGet.Client.ManagedCodeConventions.ManagedCodePatterns.ToolsAssemblies">
+      <summary>
+            Pattern used to identify Tools assets for global tools
+            </summary>
+    </member>
+    <member name="M:NuGet.Shared.NuGet.ProjectModel821151.EqualityUtility.OrderedEquals``2(System.Collections.Generic.IEnumerable{``0},System.Collections.Generic.IEnumerable{``0},System.Func{``0,``1},System.Collections.Generic.IComparer{``1},System.Collections.Generic.IEqualityComparer{``0})">
       <summary>
             Compares two enumberables for equality, ordered according to the specified key and optional comparer. Handles null values gracefully.
             </summary>
@@ -11512,41 +12303,41 @@
       <param name="orderComparer">An optional comparer for comparing keys</param>
       <param name="sequenceComparer">An optional comparer for sequences</param>
     </member>
-    <member name="M:NuGet.Shared.NuGet.ProjectModel781728.EqualityUtility.SequenceEqualWithNullCheck``1(System.Collections.Generic.IEnumerable{``0},System.Collections.Generic.IEnumerable{``0},System.Collections.Generic.IEqualityComparer{``0})">
+    <member name="M:NuGet.Shared.NuGet.ProjectModel821151.EqualityUtility.SequenceEqualWithNullCheck``1(System.Collections.Generic.IEnumerable{``0},System.Collections.Generic.IEnumerable{``0},System.Collections.Generic.IEqualityComparer{``0})">
       <summary>
             Compares two sequence for equality, allowing either sequence to be null. If one is null, both have to be
             null for equality.
             </summary>
     </member>
-    <member name="M:NuGet.Shared.NuGet.ProjectModel781728.EqualityUtility.SetEqualsWithNullCheck``1(System.Collections.Generic.ISet{``0},System.Collections.Generic.ISet{``0},System.Collections.Generic.IEqualityComparer{``0})">
+    <member name="M:NuGet.Shared.NuGet.ProjectModel821151.EqualityUtility.SetEqualsWithNullCheck``1(System.Collections.Generic.ISet{``0},System.Collections.Generic.ISet{``0},System.Collections.Generic.IEqualityComparer{``0})">
       <summary>
             Compares two sets for equality, allowing either sequence to be null.
             If one is null, both have to be null for equality.
             </summary>
     </member>
-    <member name="T:NuGet.Shared.NuGet.ProjectModel781728.HashCodeCombiner">
+    <member name="T:NuGet.Shared.NuGet.ProjectModel821151.HashCodeCombiner">
       <summary>
             Hash code creator, based on the original NuGet hash code combiner/ASP hash code combiner implementations
             </summary>
     </member>
-    <member name="M:NuGet.Shared.NuGet.ProjectModel781728.HashCodeCombiner.GetHashCode``2(``0,``1)">
+    <member name="M:NuGet.Shared.NuGet.ProjectModel821151.HashCodeCombiner.GetHashCode``2(``0,``1)">
       <summary>
             Create a unique hash code for the given set of items
             </summary>
     </member>
-    <member name="M:NuGet.Shared.NuGet.ProjectModel781728.HashCodeCombiner.GetHashCode``3(``0,``1,``2)">
+    <member name="M:NuGet.Shared.NuGet.ProjectModel821151.HashCodeCombiner.GetHashCode``3(``0,``1,``2)">
       <summary>
             Create a unique hash code for the given set of items
             </summary>
     </member>
-    <member name="M:NuGet.Shared.NuGet.ProjectModel781728.Extensions.AsList``1(System.Collections.Generic.IEnumerable{``0})">
+    <member name="M:NuGet.Shared.NuGet.ProjectModel821151.Extensions.AsList``1(System.Collections.Generic.IEnumerable{``0})">
       <summary>
             Return the enumerable as a List of T, copying if required. Optimized for common case where it is an List of T.
             Avoid mutating the return value.
             </summary>
       <remarks>https://aspnetwebstack.codeplex.com/SourceControl/latest#src/Common/CollectionExtensions.cs</remarks>
     </member>
-    <member name="M:NuGet.Shared.NuGet.ProjectModel781728.Extensions.AsHashSet``1(System.Collections.Generic.ISet{``0},System.Collections.Generic.IEqualityComparer{``0})">
+    <member name="M:NuGet.Shared.NuGet.ProjectModel821151.Extensions.AsHashSet``1(System.Collections.Generic.ISet{``0},System.Collections.Generic.IEqualityComparer{``0})">
       <summary>
             Return the ISet as a HashSet of T, copying if required. Optimized for common case where it is a HashSet of T.
             Avoid mutating the return value.
@@ -12131,7 +12922,7 @@
     </member>
     <member name="F:NuGet.ProjectModel.ProjectStyle.DotnetCliTool">
       <summary>
-            Tool
+            DotnetCliToolReference "project"
             </summary>
     </member>
     <member name="F:NuGet.ProjectModel.ProjectStyle.Standalone">
@@ -12142,6 +12933,11 @@
     <member name="F:NuGet.ProjectModel.ProjectStyle.PackagesConfig">
       <summary>
             Packages.config project
+            </summary>
+    </member>
+    <member name="F:NuGet.ProjectModel.ProjectStyle.DotnetToolReference">
+      <summary>
+            DotnetToolReference project
             </summary>
     </member>
     <member name="T:NuGet.ProjectModel.Sha512HashFunction">
@@ -12275,6 +13071,11 @@
             Class to hold warning properties given by project system.
             </summary>
     </member>
+    <member name="M:NuGet.ProjectModel.WarningProperties.GetWarningProperties(System.String,System.String,System.String)">
+      <summary>
+            Create warning properties from the msbuild property strings.
+            </summary>
+    </member>
     <member name="P:NuGet.ProjectModel.WarningProperties.WarningsAsErrors">
       <summary>
             List of Warning Codes that should be treated as Errors.
@@ -12290,7 +13091,7 @@
             Indicates if all warnings should be ignored.
             </summary>
     </member>
-    <member name="M:NuGet.Shared.NuGet.Protocol838083.EqualityUtility.OrderedEquals``2(System.Collections.Generic.IEnumerable{``0},System.Collections.Generic.IEnumerable{``0},System.Func{``0,``1},System.Collections.Generic.IComparer{``1},System.Collections.Generic.IEqualityComparer{``0})">
+    <member name="M:NuGet.Shared.NuGet.Protocol878118.EqualityUtility.OrderedEquals``2(System.Collections.Generic.IEnumerable{``0},System.Collections.Generic.IEnumerable{``0},System.Func{``0,``1},System.Collections.Generic.IComparer{``1},System.Collections.Generic.IEqualityComparer{``0})">
       <summary>
             Compares two enumberables for equality, ordered according to the specified key and optional comparer. Handles null values gracefully.
             </summary>
@@ -12302,41 +13103,41 @@
       <param name="orderComparer">An optional comparer for comparing keys</param>
       <param name="sequenceComparer">An optional comparer for sequences</param>
     </member>
-    <member name="M:NuGet.Shared.NuGet.Protocol838083.EqualityUtility.SequenceEqualWithNullCheck``1(System.Collections.Generic.IEnumerable{``0},System.Collections.Generic.IEnumerable{``0},System.Collections.Generic.IEqualityComparer{``0})">
+    <member name="M:NuGet.Shared.NuGet.Protocol878118.EqualityUtility.SequenceEqualWithNullCheck``1(System.Collections.Generic.IEnumerable{``0},System.Collections.Generic.IEnumerable{``0},System.Collections.Generic.IEqualityComparer{``0})">
       <summary>
             Compares two sequence for equality, allowing either sequence to be null. If one is null, both have to be
             null for equality.
             </summary>
     </member>
-    <member name="M:NuGet.Shared.NuGet.Protocol838083.EqualityUtility.SetEqualsWithNullCheck``1(System.Collections.Generic.ISet{``0},System.Collections.Generic.ISet{``0},System.Collections.Generic.IEqualityComparer{``0})">
+    <member name="M:NuGet.Shared.NuGet.Protocol878118.EqualityUtility.SetEqualsWithNullCheck``1(System.Collections.Generic.ISet{``0},System.Collections.Generic.ISet{``0},System.Collections.Generic.IEqualityComparer{``0})">
       <summary>
             Compares two sets for equality, allowing either sequence to be null.
             If one is null, both have to be null for equality.
             </summary>
     </member>
-    <member name="T:NuGet.Shared.NuGet.Protocol838083.HashCodeCombiner">
+    <member name="T:NuGet.Shared.NuGet.Protocol878118.HashCodeCombiner">
       <summary>
             Hash code creator, based on the original NuGet hash code combiner/ASP hash code combiner implementations
             </summary>
     </member>
-    <member name="M:NuGet.Shared.NuGet.Protocol838083.HashCodeCombiner.GetHashCode``2(``0,``1)">
+    <member name="M:NuGet.Shared.NuGet.Protocol878118.HashCodeCombiner.GetHashCode``2(``0,``1)">
       <summary>
             Create a unique hash code for the given set of items
             </summary>
     </member>
-    <member name="M:NuGet.Shared.NuGet.Protocol838083.HashCodeCombiner.GetHashCode``3(``0,``1,``2)">
+    <member name="M:NuGet.Shared.NuGet.Protocol878118.HashCodeCombiner.GetHashCode``3(``0,``1,``2)">
       <summary>
             Create a unique hash code for the given set of items
             </summary>
     </member>
-    <member name="M:NuGet.Shared.NuGet.Protocol838083.Extensions.AsList``1(System.Collections.Generic.IEnumerable{``0})">
+    <member name="M:NuGet.Shared.NuGet.Protocol878118.Extensions.AsList``1(System.Collections.Generic.IEnumerable{``0})">
       <summary>
             Return the enumerable as a List of T, copying if required. Optimized for common case where it is an List of T.
             Avoid mutating the return value.
             </summary>
       <remarks>https://aspnetwebstack.codeplex.com/SourceControl/latest#src/Common/CollectionExtensions.cs</remarks>
     </member>
-    <member name="M:NuGet.Shared.NuGet.Protocol838083.Extensions.AsHashSet``1(System.Collections.Generic.ISet{``0},System.Collections.Generic.IEqualityComparer{``0})">
+    <member name="M:NuGet.Shared.NuGet.Protocol878118.Extensions.AsHashSet``1(System.Collections.Generic.ISet{``0},System.Collections.Generic.IEqualityComparer{``0})">
       <summary>
             Return the ISet as a HashSet of T, copying if required. Optimized for common case where it is a HashSet of T.
             Avoid mutating the return value.
@@ -12732,6 +13533,11 @@
     <member name="P:NuGet.Protocol.HttpRetryHandlerRequest.DownloadTimeout">
       <summary>The timeout to apply to <see cref="T:NuGet.Protocol.DownloadTimeoutStream" /> instances.</summary>
     </member>
+    <member name="P:NuGet.Protocol.HttpRetryHandlerRequest.AddHeaders">
+      <summary>
+            Additional headers to add to the request.
+            </summary>
+    </member>
     <member name="M:NuGet.Protocol.HttpSource.GetAsync``1(NuGet.Protocol.HttpSourceCachedRequest,System.Func{NuGet.Protocol.HttpSourceResult,System.Threading.Tasks.Task{``0}},NuGet.Common.ILogger,System.Threading.CancellationToken)">
       <summary>
             Caching Get request.
@@ -12901,6 +13707,11 @@
       <summary>
             A message handler responsible for retrying request for authenticated proxies
             with missing credentials.
+            </summary>
+    </member>
+    <member name="P:NuGet.Protocol.SemaphoreSlimThrottle.CurrentCount">
+      <summary>
+            The number of remaining threads that can enter the semaphore.
             </summary>
     </member>
     <member name="F:NuGet.Protocol.StsAuthenticationHandler.STSEndPointHeader">
@@ -13466,10 +14277,11 @@
             A remote package downloader.
             </summary>
     </member>
-    <member name="M:NuGet.Protocol.RemotePackageArchiveDownloader.#ctor(NuGet.Protocol.Core.Types.FindPackageByIdResource,NuGet.Packaging.Core.PackageIdentity,NuGet.Protocol.Core.Types.SourceCacheContext,NuGet.Common.ILogger)">
+    <member name="M:NuGet.Protocol.RemotePackageArchiveDownloader.#ctor(System.String,NuGet.Protocol.Core.Types.FindPackageByIdResource,NuGet.Packaging.Core.PackageIdentity,NuGet.Protocol.Core.Types.SourceCacheContext,NuGet.Common.ILogger)">
       <summary>
             Initializes a new <see cref="T:NuGet.Protocol.RemotePackageArchiveDownloader" /> class.
             </summary>
+      <param name="source">A package source.</param>
       <param name="resource">A <see cref="T:NuGet.Protocol.Core.Types.FindPackageByIdResource" /> resource.</param>
       <param name="packageIdentity">A package identity.</param>
       <param name="cacheContext">A source cache context.</param>
@@ -14264,6 +15076,16 @@
               Looks up a localized string similar to Unable to load nuspec from package '{0}'..
             </summary>
     </member>
+    <member name="P:NuGet.Protocol.Strings.Log_FailedToParseRepoSignInfor">
+      <summary>
+              Looks up a localized string similar to Unable to parse {0} information from {1}. .
+            </summary>
+    </member>
+    <member name="P:NuGet.Protocol.Strings.Log_FailedToReadRepositorySignature">
+      <summary>
+              Looks up a localized string similar to Unable to get repository signature information for source {0}..
+            </summary>
+    </member>
     <member name="P:NuGet.Protocol.Strings.Log_FailedToReadServiceIndex">
       <summary>
               Looks up a localized string similar to Unable to load the service index for source {0}..
@@ -14312,6 +15134,11 @@
     <member name="P:NuGet.Protocol.Strings.Log_RetryingHttp">
       <summary>
               Looks up a localized string similar to An error was encountered when fetching '{0} {1}'. The request will now be retried..
+            </summary>
+    </member>
+    <member name="P:NuGet.Protocol.Strings.Log_RetryingRepositorySignature">
+      <summary>
+              Looks up a localized string similar to Retrying repository signature request for source '{0}'..
             </summary>
     </member>
     <member name="P:NuGet.Protocol.Strings.Log_RetryingServiceIndex">
@@ -18692,13 +19519,6 @@
       <param name="source">A package source.</param>
       <exception cref="T:System.ArgumentNullException">Thrown if <paramref name="stream" /> is <c>null</c>.</exception>
     </member>
-    <member name="M:NuGet.Protocol.Core.Types.DownloadResourceResult.#ctor(System.IO.Stream)">
-      <summary>
-            Initializes a new <see cref="T:NuGet.Protocol.Core.Types.DownloadResourceResult" /> class.
-            </summary>
-      <param name="stream">A package stream.</param>
-      <exception cref="T:System.ArgumentNullException">Thrown if <paramref name="stream" /> is <c>null</c>.</exception>
-    </member>
     <member name="M:NuGet.Protocol.Core.Types.DownloadResourceResult.#ctor(System.IO.Stream,NuGet.Packaging.PackageReaderBase,System.String)">
       <summary>
             Initializes a new <see cref="T:NuGet.Protocol.Core.Types.DownloadResourceResult" /> class.
@@ -18706,14 +19526,6 @@
       <param name="stream">A package stream.</param>
       <param name="packageReader">A package reader.</param>
       <param name="source">A package source.</param>
-      <exception cref="T:System.ArgumentNullException">Thrown if <paramref name="stream" /> is <c>null</c>.</exception>
-    </member>
-    <member name="M:NuGet.Protocol.Core.Types.DownloadResourceResult.#ctor(System.IO.Stream,NuGet.Packaging.PackageReaderBase)">
-      <summary>
-            Initializes a new <see cref="T:NuGet.Protocol.Core.Types.DownloadResourceResult" /> class.
-            </summary>
-      <param name="stream">A package stream.</param>
-      <param name="packageReader">A package reader.</param>
       <exception cref="T:System.ArgumentNullException">Thrown if <paramref name="stream" /> is <c>null</c>.</exception>
     </member>
     <member name="M:NuGet.Protocol.Core.Types.DownloadResourceResult.#ctor(NuGet.Packaging.PackageReaderBase,System.String)">
@@ -18779,7 +19591,12 @@
     <member name="P:NuGet.Protocol.Core.Types.HttpSourceCacheContext.RootTempFolder">
       <summary>
             A suggested root folder to drop temporary files under, it will get cleared by the
-            disposal of the <see cref="T:NuGet.Protocol.Core.Types.SourceCacheContext" /> that was used to create this instance.
+            disposal of the <see cref="P:NuGet.Protocol.Core.Types.HttpSourceCacheContext.SourceCacheContext" /> that was used to create this instance.
+            </summary>
+    </member>
+    <member name="P:NuGet.Protocol.Core.Types.HttpSourceCacheContext.SourceCacheContext">
+      <summary>
+            Inner cache context.
             </summary>
     </member>
     <member name="T:NuGet.Protocol.Core.Types.INuGetResource">
@@ -19528,6 +20345,12 @@
             This should only be used for retries.
             </summary>
     </member>
+    <member name="P:NuGet.Protocol.Core.Types.SourceCacheContext.SessionId">
+      <summary>
+            X-NUGET-SESSION
+            This should be unique for each package operation.
+            </summary>
+    </member>
     <member name="P:NuGet.Protocol.Core.Types.SourceCacheContext.MaxAgeTimeSpan">
       <summary>
             Package version lists from the server older than this time span
@@ -19680,7 +20503,7 @@
             </summary>
       <param name="client">Http client</param>
     </member>
-    <member name="M:NuGet.Shared.NuGet.Versioning1096228.EqualityUtility.OrderedEquals``2(System.Collections.Generic.IEnumerable{``0},System.Collections.Generic.IEnumerable{``0},System.Func{``0,``1},System.Collections.Generic.IComparer{``1},System.Collections.Generic.IEqualityComparer{``0})">
+    <member name="M:NuGet.Shared.NuGet.Versioning1141040.EqualityUtility.OrderedEquals``2(System.Collections.Generic.IEnumerable{``0},System.Collections.Generic.IEnumerable{``0},System.Func{``0,``1},System.Collections.Generic.IComparer{``1},System.Collections.Generic.IEqualityComparer{``0})">
       <summary>
             Compares two enumberables for equality, ordered according to the specified key and optional comparer. Handles null values gracefully.
             </summary>
@@ -19692,41 +20515,41 @@
       <param name="orderComparer">An optional comparer for comparing keys</param>
       <param name="sequenceComparer">An optional comparer for sequences</param>
     </member>
-    <member name="M:NuGet.Shared.NuGet.Versioning1096228.EqualityUtility.SequenceEqualWithNullCheck``1(System.Collections.Generic.IEnumerable{``0},System.Collections.Generic.IEnumerable{``0},System.Collections.Generic.IEqualityComparer{``0})">
+    <member name="M:NuGet.Shared.NuGet.Versioning1141040.EqualityUtility.SequenceEqualWithNullCheck``1(System.Collections.Generic.IEnumerable{``0},System.Collections.Generic.IEnumerable{``0},System.Collections.Generic.IEqualityComparer{``0})">
       <summary>
             Compares two sequence for equality, allowing either sequence to be null. If one is null, both have to be
             null for equality.
             </summary>
     </member>
-    <member name="M:NuGet.Shared.NuGet.Versioning1096228.EqualityUtility.SetEqualsWithNullCheck``1(System.Collections.Generic.ISet{``0},System.Collections.Generic.ISet{``0},System.Collections.Generic.IEqualityComparer{``0})">
+    <member name="M:NuGet.Shared.NuGet.Versioning1141040.EqualityUtility.SetEqualsWithNullCheck``1(System.Collections.Generic.ISet{``0},System.Collections.Generic.ISet{``0},System.Collections.Generic.IEqualityComparer{``0})">
       <summary>
             Compares two sets for equality, allowing either sequence to be null.
             If one is null, both have to be null for equality.
             </summary>
     </member>
-    <member name="T:NuGet.Shared.NuGet.Versioning1096228.HashCodeCombiner">
+    <member name="T:NuGet.Shared.NuGet.Versioning1141040.HashCodeCombiner">
       <summary>
             Hash code creator, based on the original NuGet hash code combiner/ASP hash code combiner implementations
             </summary>
     </member>
-    <member name="M:NuGet.Shared.NuGet.Versioning1096228.HashCodeCombiner.GetHashCode``2(``0,``1)">
+    <member name="M:NuGet.Shared.NuGet.Versioning1141040.HashCodeCombiner.GetHashCode``2(``0,``1)">
       <summary>
             Create a unique hash code for the given set of items
             </summary>
     </member>
-    <member name="M:NuGet.Shared.NuGet.Versioning1096228.HashCodeCombiner.GetHashCode``3(``0,``1,``2)">
+    <member name="M:NuGet.Shared.NuGet.Versioning1141040.HashCodeCombiner.GetHashCode``3(``0,``1,``2)">
       <summary>
             Create a unique hash code for the given set of items
             </summary>
     </member>
-    <member name="M:NuGet.Shared.NuGet.Versioning1096228.Extensions.AsList``1(System.Collections.Generic.IEnumerable{``0})">
+    <member name="M:NuGet.Shared.NuGet.Versioning1141040.Extensions.AsList``1(System.Collections.Generic.IEnumerable{``0})">
       <summary>
             Return the enumerable as a List of T, copying if required. Optimized for common case where it is an List of T.
             Avoid mutating the return value.
             </summary>
       <remarks>https://aspnetwebstack.codeplex.com/SourceControl/latest#src/Common/CollectionExtensions.cs</remarks>
     </member>
-    <member name="M:NuGet.Shared.NuGet.Versioning1096228.Extensions.AsHashSet``1(System.Collections.Generic.ISet{``0},System.Collections.Generic.IEqualityComparer{``0})">
+    <member name="M:NuGet.Shared.NuGet.Versioning1141040.Extensions.AsHashSet``1(System.Collections.Generic.ISet{``0},System.Collections.Generic.IEqualityComparer{``0})">
       <summary>
             Return the ISet as a HashSet of T, copying if required. Optimized for common case where it is a HashSet of T.
             Avoid mutating the return value.

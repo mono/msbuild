@@ -134,8 +134,8 @@ namespace NuGet.MSBuildSdkResolver.UnitTests
                 NuGetSdkResolverBase.NuGetAssemblies.ShouldNotContain(newlyLoadedAssembly);
             }
         }
-
 #endif
+
         private void VerifyTryGetNuGetVersionForSdk(string version, NuGetVersion expectedVersion, SdkResolverContextBase context = null)
         {
             object parsedVersion;

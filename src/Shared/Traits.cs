@@ -131,6 +131,7 @@ namespace Microsoft.Build.Utilities
         /// </summary>
         public readonly bool EnsureStdOutForChildNodesIsPrimaryStdout = Environment.GetEnvironmentVariable("MSBUILDENSURESTDOUTFORTASKPROCESSES") == "1";
 
+
         private static bool? ParseNullableBoolFromEnvironmentVariable(string environmentVariable)
         {
             var value = Environment.GetEnvironmentVariable(environmentVariable);
