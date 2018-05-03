@@ -227,7 +227,7 @@ namespace Microsoft.Build.BackEnd
                 PipeOptions.Asynchronous | PipeOptions.WriteThrough,
                 PipeBufferSize, // Default input buffer
                 PipeBufferSize  // Default output buffer
-#if FEATURE_PIPE_SECURITY
+#if FEATURE_NAMED_PIPE_SECURITY_CONSTRUCTOR
                 , security,
                 HandleInheritability.None
 #endif
@@ -422,7 +422,11 @@ namespace Microsoft.Build.BackEnd
                     // it will cause the host to reject us; new hosts expect 00 and old hosts expect F5 or 06).
                     try
                     {
-                        long handshake = localReadPipe.ReadLongForHandshake(/* reject these leads */ new byte[] { 0x5F, 0x60 }, 0xFF /* this will disconnect the host; it expects leading 00 or F5 or 06 */);
+                        long handshake = localReadPipe.ReadLongForHandshake(/* reject these leads */ new byte[] { 0x5F, 0x60 }, 0xFF /* this will disconnect the host; it expects leading 00 or F5 or 06 */
+#if NETCOREAPP2_1
+                            , ClientConnectTimeout /* wait a long time for the handshake from this side */
+#endif
+                            );
 
 #if FEATURE_SECURITY_PERMISSIONS
                         WindowsIdentity currentIdentity = WindowsIdentity.GetCurrent();

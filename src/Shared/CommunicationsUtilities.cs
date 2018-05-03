@@ -122,12 +122,7 @@ namespace Microsoft.Build.Internal
                     // them, so just check COMPLUS_InstallRoot.
                     string complusInstallRoot = Environment.GetEnvironmentVariable("COMPLUS_INSTALLROOT");
 
-                    // We should also check the file version when COMPLUS_INSTALLROOT is null, because the protocol can change between releases.
-                    // If we don't check, we'll run into issues
-                    string taskhostexe = FileUtilities.ExecutingAssemblyPath;
-                    string majorVersion = FileVersionInfo.GetVersionInfo(taskhostexe).FileMajorPart.ToString();
-
-                    s_fileVersionHash = GetHandshakeHashCode(complusInstallRoot ?? majorVersion);
+                    s_fileVersionHash = GetHandshakeHashCode(complusInstallRoot ?? ThisAssembly.AssemblyInformationalVersion);
                     s_fileVersionChecked = true;
                 }
 
@@ -360,44 +355,85 @@ namespace Microsoft.Build.Internal
         /// <summary>
         /// Extension method to read a series of bytes from a stream
         /// </summary>
-        internal static long ReadLongForHandshake(this PipeStream stream)
+        internal static long ReadLongForHandshake(this PipeStream stream
+#if NETCOREAPP2_1
+            , int handshakeReadTimeout
+#endif
+            )
         {
-            return stream.ReadLongForHandshake((byte[])null, 0);
+            return stream.ReadLongForHandshake((byte[])null, 0
+#if NETCOREAPP2_1
+                , handshakeReadTimeout
+#endif
+                );
         }
 
         /// <summary>
         /// Extension method to read a series of bytes from a stream.
         /// If specified, leading byte matches one in the supplied array if any, returns rejection byte and throws IOException.
         /// </summary>
-        internal static long ReadLongForHandshake(this PipeStream stream, byte[] leadingBytesToReject, byte rejectionByteToReturn)
+        internal static long ReadLongForHandshake(this PipeStream stream, byte[] leadingBytesToReject,
+            byte rejectionByteToReturn
+#if NETCOREAPP2_1
+            , int timeout
+#endif
+            )
         {
             byte[] bytes = new byte[8];
 
-            for (int i = 0; i < bytes.Length; i++)
+#if NETCOREAPP2_1
+            if (!NativeMethodsShared.IsWindows)
             {
-                int read = stream.ReadByte();
+                // Enforce a minimum timeout because the Windows code can pass
+                // a timeout of 0 for the connection, but that doesn't work for
+                // the actual timeout here.
+                timeout = Math.Max(timeout, 50);
 
-                if (read == -1)
+                // A legacy MSBuild.exe won't try to connect to MSBuild running
+                // in a dotnet host process, so we can read the bytes simply.
+                var readTask = stream.ReadAsync(bytes, 0, bytes.Length);
+
+                // Manual timeout here because the timeout passed to Connect() just before
+                // calling this method does not apply on UNIX domain socket-based
+                // implementations of PipeStream.
+                // https://github.com/dotnet/corefx/issues/28791
+                if (!readTask.Wait(timeout))
                 {
-                    // We've unexpectly reached end of stream.
-                    // We are now in a bad state, disconnect on our end
-                    throw new IOException(String.Format(CultureInfo.InvariantCulture, "Unexpected end of stream while reading for handshake"));
+                    throw new IOException(string.Format(CultureInfo.InvariantCulture, "Did not receive return handshake in {0}ms", timeout));
                 }
 
-                if (i == 0 && leadingBytesToReject != null)
+                readTask.GetAwaiter().GetResult();
+            }
+            else
+#endif
+            {
+                // Legacy approach with an early-abort for connection attempts from ancient MSBuild.exes
+                for (int i = 0; i < bytes.Length; i++)
                 {
-                    foreach (byte reject in leadingBytesToReject)
-                    {
-                        if (read == reject)
-                        {
-                            stream.WriteByte(rejectionByteToReturn); // disconnect the host
+                    int read = stream.ReadByte();
 
-                            throw new IOException(String.Format(CultureInfo.InvariantCulture, "Client: rejected old host. Received byte {0} but this matched a byte to reject.", bytes[i]));  // disconnect and quit
+                    if (read == -1)
+                    {
+                        // We've unexpectly reached end of stream.
+                        // We are now in a bad state, disconnect on our end
+                        throw new IOException(String.Format(CultureInfo.InvariantCulture, "Unexpected end of stream while reading for handshake"));
+                    }
+
+                    if (i == 0 && leadingBytesToReject != null)
+                    {
+                        foreach (byte reject in leadingBytesToReject)
+                        {
+                            if (read == reject)
+                            {
+                                stream.WriteByte(rejectionByteToReturn); // disconnect the host
+
+                                throw new IOException(String.Format(CultureInfo.InvariantCulture, "Client: rejected old host. Received byte {0} but this matched a byte to reject.", bytes[i]));  // disconnect and quit
+                            }
                         }
                     }
-                }
 
-                bytes[i] = Convert.ToByte(read);
+                    bytes[i] = Convert.ToByte(read);
+                }
             }
 
             long result;

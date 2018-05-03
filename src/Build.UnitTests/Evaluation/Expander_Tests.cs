@@ -589,7 +589,8 @@ namespace Microsoft.Build.UnitTests.Evaluation
         }
 
         [Fact]
-        [PlatformSpecific(Xunit.PlatformID.Windows)] // "Cannot fail on path too long with Unix"
+        [PlatformSpecific(TestPlatforms.Windows)] // "Cannot fail on path too long with Unix"
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Netcoreapp)]
         public void ExpandItemVectorFunctionsBuiltIn_PathTooLongError()
         {
             string content = @"
@@ -610,6 +611,7 @@ namespace Microsoft.Build.UnitTests.Evaluation
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Netcoreapp, ".NET Core 2.1+ no longer validates paths: https://github.com/dotnet/corefx/issues/27779#issuecomment-371253486")]
         public void ExpandItemVectorFunctionsBuiltIn_InvalidCharsError()
         {
             if (!NativeMethodsShared.IsWindows)
@@ -873,7 +875,8 @@ namespace Microsoft.Build.UnitTests.Evaluation
         /// Bad path when getting metadata through ->Metadata function
         /// </summary>
         [Fact]
-        [PlatformSpecific(Xunit.PlatformID.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Netcoreapp, ".NET Core 2.1+ no longer validates paths: https://github.com/dotnet/corefx/issues/27779#issuecomment-371253486")]
         public void InvalidPathAndMetadataItemFunctionPathTooLong()
         {
             MockLogger logger = Helpers.BuildProjectWithNewOMExpectFailure(@"
@@ -894,7 +897,8 @@ namespace Microsoft.Build.UnitTests.Evaluation
         /// Bad path with illegal windows chars when getting metadata through ->Metadata function
         /// </summary>
         [Fact]
-        [PlatformSpecific(Xunit.PlatformID.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Netcoreapp, ".NET Core 2.1+ no longer validates paths: https://github.com/dotnet/corefx/issues/27779#issuecomment-371253486")]
         public void InvalidPathAndMetadataItemFunctionInvalidWindowsPathChars()
         {
             MockLogger logger = Helpers.BuildProjectWithNewOMExpectFailure(@"
@@ -934,7 +938,8 @@ namespace Microsoft.Build.UnitTests.Evaluation
         /// Bad path when getting metadata through ->WithMetadataValue function
         /// </summary>
         [Fact]
-        [PlatformSpecific(Xunit.PlatformID.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Netcoreapp, ".NET Core 2.1+ no longer validates paths: https://github.com/dotnet/corefx/issues/27779#issuecomment-371253486")]
         public void InvalidPathAndMetadataItemFunctionPathTooLong2()
         {
             MockLogger logger = Helpers.BuildProjectWithNewOMExpectFailure(@"
@@ -955,7 +960,8 @@ namespace Microsoft.Build.UnitTests.Evaluation
         /// Bad path with illegal windows chars when getting metadata through ->WithMetadataValue function
         /// </summary>
         [Fact]
-        [PlatformSpecific(Xunit.PlatformID.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Netcoreapp, ".NET Core 2.1+ no longer validates paths: https://github.com/dotnet/corefx/issues/27779#issuecomment-371253486")]
         public void InvalidPathAndMetadataItemFunctionInvalidWindowsPathChars2()
         {
             MockLogger logger = Helpers.BuildProjectWithNewOMExpectFailure(@"
@@ -995,7 +1001,7 @@ namespace Microsoft.Build.UnitTests.Evaluation
         /// Bad path when getting metadata through ->AnyHaveMetadataValue function
         /// </summary>
         [Fact]
-        [PlatformSpecific(Xunit.PlatformID.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]
         public void InvalidPathAndMetadataItemFunctionPathTooLong3()
         {
             MockLogger logger = Helpers.BuildProjectWithNewOMExpectFailure(@"
@@ -1016,7 +1022,8 @@ namespace Microsoft.Build.UnitTests.Evaluation
         /// Bad path with illegal windows chars when getting metadata through ->AnyHaveMetadataValue function
         /// </summary>
         [Fact]
-        [PlatformSpecific(Xunit.PlatformID.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Netcoreapp, ".NET Core 2.1+ no longer validates paths: https://github.com/dotnet/corefx/issues/27779#issuecomment-371253486")]
         public void InvalidPathAndMetadataItemInvalidWindowsPathChars3()
         {
             MockLogger logger = Helpers.BuildProjectWithNewOMExpectFailure(@"
@@ -2321,9 +2328,9 @@ namespace Microsoft.Build.UnitTests.Evaluation
         /// Expand property function that is only available when MSBUILDENABLEALLPROPERTYFUNCTIONS=1
         /// </summary>
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Netcoreapp, "https://github.com/dotnet/coreclr/issues/15662")]
         public void PropertyStaticFunctionAllEnabled()
         {
-
             using (var env = TestEnvironment.Create())
             {
                 env.SetEnvironmentVariable("MSBUILDENABLEALLPROPERTYFUNCTIONS", "1");
@@ -3432,11 +3439,13 @@ $(
                 "()"
             };
 
+#if !RUNTIME_TYPE_NETCORE
             if (NativeMethodsShared.IsWindows)
             {
                 // '|' is only an invalid character in Windows filesystems
                 errorTests.Add("$([System.IO.Path]::Combine(`|`,`b`))");
             }
+#endif
 
 #if FEATURE_WIN32_REGISTRY
             if (NativeMethodsShared.IsWindows)

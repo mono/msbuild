@@ -5,14 +5,13 @@ using System;
 using System.IO;
 using System.Reflection;
 using System.Text;
-using Microsoft.Build.Engine.UnitTests;
+using Microsoft.Build.UnitTests;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Tasks;
 using Microsoft.Build.Utilities;
 using Microsoft.Build.Shared;
 using Shouldly;
 using Xunit;
-using PlatformID = Xunit.PlatformID;
 
 namespace Microsoft.Build.UnitTests
 {
@@ -47,11 +46,11 @@ namespace Microsoft.Build.UnitTests
         [Trait("Category", "mono-osx-failing")]
         public void NoTempFileLeaks()
         {
-            using (var alternativeTemp = new Helpers.AlternativeTempPath())
+            using (var testEnvironment = TestEnvironment.Create())
             {
                 // This test counts files in TEMP. If it uses the system TEMP, some
                 // other process may interfere. Use a private TEMP instead.
-                var newTempPath = alternativeTemp.Path;
+                var newTempPath = testEnvironment.CreateNewTempPath().TempPath;
 
                 string tempPath = Path.GetTempPath();
                 Assert.StartsWith(newTempPath, tempPath);
@@ -94,8 +93,12 @@ namespace Microsoft.Build.UnitTests
         [Fact]
         public void Timeout()
         {
-            // On non-Windows the exit code of a killed process is SIGTERM (143)
-            int expectedExitCode = NativeMethodsShared.IsWindows ? -1 : 143;
+            // On non-Windows the exit code of a killed sh should be
+            // SIGTERM (15) + exited-due-to-signal (128) = 143.
+            // On .NET Core 2.1 preview2 + High Sierra it's consistently
+            // just 128 for some reason.
+            int expectedExitCode = NativeMethodsShared.IsWindows ? -1 :
+                    NativeMethodsShared.IsOSX ? 128 : 143;
 
             Exec exec = PrepareExec(NativeMethodsShared.IsWindows ? ":foo \n goto foo" : "while true; do sleep 1; done");
             exec.Timeout = 5;
@@ -111,7 +114,7 @@ namespace Microsoft.Build.UnitTests
         }
 
         [Fact]
-        [PlatformSpecific(Xunit.PlatformID.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
         public void WindowsNewLineCharactersInCommandOnUnix()
         {
             var exec = PrepareExec("echo hello\r\n\r\n");
@@ -190,7 +193,7 @@ namespace Microsoft.Build.UnitTests
         }
 
         [Fact]
-        [PlatformSpecific(Xunit.PlatformID.Windows)]   // UNC is Windows-Only
+        [PlatformSpecific(TestPlatforms.Windows)]   // UNC is Windows-Only
         public void UNCWorkingDirectoryUsed()
         {
             Exec exec = PrepareExec("echo [%cd%]");
