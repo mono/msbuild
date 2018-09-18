@@ -67,6 +67,7 @@ namespace Microsoft.Build.Shared
         /// <summary>
         ///  Convert a version number like 0.0.0.0 to a Version instance.
         /// </summary>
+        /// <param name="version"></param>
         /// <param name="throwException">Should we use Parse to TryParse (parse means we throw an exception, tryparse means we will not).</param>
         internal static Version ConvertToVersion(string version, bool throwException)
         {
@@ -75,6 +76,14 @@ namespace Microsoft.Build.Shared
             if (version.Length > 0 && (version[0] == 'v' || version[0] == 'V'))
             {
                 version = version.Substring(1);
+            }
+
+            // Versions must have at least a Major and a Minor (e.g. 10.0), so if it's
+            // just one number without a decimal, add a decimal and a 0. Random strings
+            // like "tmp" will be filtered out in the Parse() or TryParse() steps
+            if (version.IndexOf(".") == -1)
+            {
+                version += ".0";
             }
 
             if (throwException)

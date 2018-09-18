@@ -6,41 +6,53 @@
 //-----------------------------------------------------------------------
 
 using System;
+#if !CLR2COMPATIBILITY
+using System.Collections.Concurrent;
+#endif
 using System.Text;
 using System.Linq;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using Microsoft.Build.Shared;
+using Microsoft.Build.Utilities;
+#if MICROSOFT_BUILD_TASKS
+using MSBuildConstants = Microsoft.Build.Tasks.MSBuildConstants;
+#else
+using MSBuildConstants = Microsoft.Build.Shared.MSBuildConstants;
+#endif
+    
 
 namespace Microsoft.Build
 {
     /// <summary>
     /// This class is used to selectively intern strings. It should be used at the point of new string creation.
     /// For example,
-    /// 
+    ///
     ///     string interned = OpportunisticIntern.Intern(String.Join(",",someStrings));
-    ///     
+    ///
     /// This class uses heuristics to decide whether it will be efficient to intern a string or not. There is no
     /// guarantee that a string will intern.
-    /// 
+    ///
     /// The thresholds and sizes were determined by experimentation to give the best number of bytes saved
     /// at reasonable elapsed time cost.
     /// </summary>
     static internal class OpportunisticIntern
     {
+        private static readonly bool s_useSimpleConcurrency = Traits.Instance.UseSimpleInternConcurrency;
+
         /// <summary>
-        /// The size of the small mru list. 
+        /// The size of the small mru list.
         /// </summary>
         private static readonly int s_smallMruSize = AssignViaEnvironment("MSBUILDSMALLINTERNSIZE", 50);
 
         /// <summary>
-        /// The size of the large mru list. 
+        /// The size of the large mru list.
         /// </summary>
         private static readonly int s_largeMruSize = AssignViaEnvironment("MSBUILDLARGEINTERNSIZE", 100);
 
         /// <summary>
-        /// The size of the huge mru list. 
+        /// The size of the huge mru list.
         /// </summary>
         private static readonly int s_hugeMruSize = AssignViaEnvironment("MSBUILDHUGEINTERNSIZE", 100);
 
@@ -68,7 +80,7 @@ namespace Microsoft.Build
         /// <summary>
         /// Manages the separate MRU lists.
         /// </summary>
-        private static BucketedPrioritizedStringList s_si = new BucketedPrioritizedStringList(/*gatherStatistics*/ false, s_smallMruSize, s_largeMruSize, s_hugeMruSize, s_smallMruThreshhold, s_largeMruThreshhold, s_hugeMruThreshhold, s_ginormousThreshhold);
+        private static BucketedPrioritizedStringList s_si = new BucketedPrioritizedStringList(/*gatherStatistics*/ false, s_smallMruSize, s_largeMruSize, s_hugeMruSize, s_smallMruThreshhold, s_largeMruThreshhold, s_hugeMruThreshhold, s_ginormousThreshhold, s_useSimpleConcurrency);
 
         #region Statistics
         /// <summary>
@@ -152,11 +164,11 @@ namespace Microsoft.Build
         internal static void EnableStatisticsGathering()
         {
             // Statistics include several 'what if' scenarios such as doubling the size of the MRU lists.
-            s_si = new BucketedPrioritizedStringList(/*gatherStatistics*/ true, s_smallMruSize, s_largeMruSize, s_hugeMruSize, s_smallMruThreshhold, s_largeMruThreshhold, s_hugeMruThreshhold, s_ginormousThreshhold);
-            s_whatIfInfinite = new BucketedPrioritizedStringList(/*gatherStatistics*/ true, Int32.MaxValue, Int32.MaxValue, Int32.MaxValue, s_smallMruThreshhold, s_largeMruThreshhold, s_hugeMruThreshhold, s_ginormousThreshhold);
-            s_whatIfDoubled = new BucketedPrioritizedStringList(/*gatherStatistics*/ true, s_smallMruSize * 2, s_largeMruSize * 2, s_hugeMruSize * 2, s_smallMruThreshhold, s_largeMruThreshhold, s_hugeMruThreshhold, s_ginormousThreshhold);
-            s_whatIfHalved = new BucketedPrioritizedStringList(/*gatherStatistics*/ true, s_smallMruSize / 2, s_largeMruSize / 2, s_hugeMruSize / 2, s_smallMruThreshhold, s_largeMruThreshhold, s_hugeMruThreshhold, s_ginormousThreshhold);
-            s_whatIfZero = new BucketedPrioritizedStringList(/*gatherStatistics*/ true, 0, 0, 0, s_smallMruThreshhold, s_largeMruThreshhold, s_hugeMruThreshhold, s_ginormousThreshhold);
+            s_si = new BucketedPrioritizedStringList(/*gatherStatistics*/ true, s_smallMruSize, s_largeMruSize, s_hugeMruSize, s_smallMruThreshhold, s_largeMruThreshhold, s_hugeMruThreshhold, s_ginormousThreshhold, s_useSimpleConcurrency);
+            s_whatIfInfinite = new BucketedPrioritizedStringList(/*gatherStatistics*/ true, Int32.MaxValue, Int32.MaxValue, Int32.MaxValue, s_smallMruThreshhold, s_largeMruThreshhold, s_hugeMruThreshhold, s_ginormousThreshhold, s_useSimpleConcurrency);
+            s_whatIfDoubled = new BucketedPrioritizedStringList(/*gatherStatistics*/ true, s_smallMruSize * 2, s_largeMruSize * 2, s_hugeMruSize * 2, s_smallMruThreshhold, s_largeMruThreshhold, s_hugeMruThreshhold, s_ginormousThreshhold, s_useSimpleConcurrency);
+            s_whatIfHalved = new BucketedPrioritizedStringList(/*gatherStatistics*/ true, s_smallMruSize / 2, s_largeMruSize / 2, s_hugeMruSize / 2, s_smallMruThreshhold, s_largeMruThreshhold, s_hugeMruThreshhold, s_ginormousThreshhold, s_useSimpleConcurrency);
+            s_whatIfZero = new BucketedPrioritizedStringList(/*gatherStatistics*/ true, 0, 0, 0, s_smallMruThreshhold, s_largeMruThreshhold, s_hugeMruThreshhold, s_ginormousThreshhold, s_useSimpleConcurrency);
         }
 
         /// <summary>
@@ -175,7 +187,7 @@ namespace Microsoft.Build
             string result = s_si.InterningToString(candidate);
 #if _DEBUG
             string expected = candidate.ExpensiveConvertToString();
-            if (!String.Equals(result, expected)) 
+            if (!String.Equals(result, expected))
             {
                 ErrorUtilities.ThrowInternalError("Interned string {0} should have been {1}", result, expected);
             }
@@ -286,7 +298,7 @@ namespace Microsoft.Build
             public string ExpensiveConvertToString()
             {
                 // PERF NOTE: This will be an allocation hot-spot because the StringBuilder is finally determined to
-                // not be internable. There is still only one conversion of StringBuilder into string it has just 
+                // not be internable. There is still only one conversion of StringBuilder into string it has just
                 // moved into this single spot.
                 return _target.ToString();
             }
@@ -408,7 +420,7 @@ namespace Microsoft.Build
             public string ExpensiveConvertToString()
             {
                 // PERF NOTE: This will be an allocation hot-spot because the char[] is finally determined to
-                // not be internable. There is still only one conversion of char[] into string it has just 
+                // not be internable. There is still only one conversion of char[] into string it has just
                 // moved into this single spot.
                 return new String(_target, _startIndex, _count);
             }
@@ -482,7 +494,7 @@ namespace Microsoft.Build
             }
 
             /// <summary>
-            /// Returs the target which is already a string.
+            /// Returns the target which is already a string.
             /// </summary>
             /// <returns>The target string.</returns>
             public string ExpensiveConvertToString()
@@ -557,6 +569,12 @@ namespace Microsoft.Build
             /// The smallest size a string can be to be ginormous.
             /// </summary>
             private int _ginormousThreshhold;
+
+            private readonly bool _useSimpleConcurrency;
+
+#if !CLR2COMPATIBILITY
+            private ConcurrentDictionary<string, string> _internedStrings = new ConcurrentDictionary<string, string>(StringComparer.Ordinal);
+#endif
 
             #region Statistics
             /// <summary>
@@ -636,7 +654,7 @@ namespace Microsoft.Build
             /// <summary>
             /// Construct.
             /// </summary>
-            internal BucketedPrioritizedStringList(bool gatherStatistics, int smallMruSize, int largeMruSize, int hugeMruSize, int smallMruThreshhold, int largeMruThreshhold, int hugeMruThreshhold, int ginormousThreshhold)
+            internal BucketedPrioritizedStringList(bool gatherStatistics, int smallMruSize, int largeMruSize, int hugeMruSize, int smallMruThreshhold, int largeMruThreshhold, int hugeMruThreshhold, int ginormousThreshhold, bool useSimpleConcurrency)
             {
                 if (smallMruSize == 0 && largeMruSize == 0 && hugeMruSize == 0)
                 {
@@ -650,6 +668,7 @@ namespace Microsoft.Build
                 _largeMruThreshhold = largeMruThreshhold;
                 _hugeMruThreshhold = hugeMruThreshhold;
                 _ginormousThreshhold = ginormousThreshhold;
+                _useSimpleConcurrency = useSimpleConcurrency;
 
                 for (int i = 0; i < _ginormousSize; i++)
                 {
@@ -749,10 +768,10 @@ namespace Microsoft.Build
             }
 
             /// <summary>
-            /// Try to intern the string. 
+            /// Try to intern the string.
             /// Return true if an interned value could be returned.
             /// Return false if it was added to the intern list, but wasn't there already.
-            /// Return null if it didn't meet the length criteria for any of the buckets.
+            /// Return null if it didn't meet the length criteria for any of the buckets. Interning was rejected
             /// </summary>
             private bool? TryIntern(IInternable candidate, out string interned)
             {
@@ -886,6 +905,36 @@ namespace Microsoft.Build
                             return true;
                         }
                     }
+                    // see Microsoft.Build.BackEnd.BuildRequestConfiguration.CreateUniqueGlobalProperty
+                    else if (length > MSBuildConstants.MSBuildDummyGlobalPropertyHeader.Length &&
+                             candidate[0] == 'M' &&
+                             candidate[1] == 'S' &&
+                             candidate[2] == 'B' &&
+                             candidate[3] == 'u' &&
+                             candidate[4] == 'i' &&
+                             candidate[5] == 'l' &&
+                             candidate[6] == 'd' &&
+                             candidate[7] == 'P' &&
+                             candidate[8] == 'r' &&
+                             candidate[9] == 'o' &&
+                             candidate[10] == 'j' &&
+                             candidate[11] == 'e' &&
+                             candidate[12] == 'c' &&
+                             candidate[13] == 't' &&
+                             candidate[14] == 'I' &&
+                             candidate[15] == 'n' &&
+                             candidate[16] == 's' &&
+                             candidate[17] == 't' &&
+                             candidate[18] == 'a' &&
+                             candidate[19] == 'n' &&
+                             candidate[20] == 'c' &&
+                             candidate[21] == 'e'
+                    )
+                    {
+                        // don't want to leak unique strings into the cache
+                        interned = candidate.ExpensiveConvertToString();
+                        return null;
+                    }
                     else if (length == 24)
                     {
                         if (candidate[0] == 'R' && candidate[1] == 'e' && candidate[2] == 's' && candidate[3] == 'o' && candidate[4] == 'l' && candidate[5] == 'v' && candidate[6] == 'e')
@@ -935,6 +984,14 @@ namespace Microsoft.Build
                             return false;
                         }
                     }
+#if !CLR2COMPATIBILITY
+                    else if (_useSimpleConcurrency)
+                    {
+                        var stringified = candidate.ExpensiveConvertToString();
+                        interned = _internedStrings.GetOrAdd(stringified, stringified);
+                        return true;
+                    }
+#endif
                     else if (length >= _hugeMruThreshhold)
                     {
                         lock (_hugeMru)
@@ -1076,7 +1133,7 @@ namespace Microsoft.Build
                         {
                             if (!candidate.ReferenceEquals(head.Value))
                             {
-                                // Wasn't at the top already, so move it there. 
+                                // Wasn't at the top already, so move it there.
                                 prior.Next = head.Next;
                                 head.Next = _mru;
                                 _mru = head;

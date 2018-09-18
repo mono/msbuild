@@ -2,22 +2,20 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
-using System.IO;
 using System.Collections;
 using System.Collections.Specialized;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
+using System.Linq;
+using System.IO;
 using System.Text;
 using System.Resources;
 using System.Threading;
-using System.Reflection;
 using System.Diagnostics;
 using System.ComponentModel;
-using System.Globalization;
-using System.Runtime.InteropServices;
 
 using Microsoft.Build.Framework;
 using Microsoft.Build.Shared;
-using System.Diagnostics.CodeAnalysis;
 
 namespace Microsoft.Build.Utilities
 {
@@ -63,6 +61,8 @@ namespace Microsoft.Build.Utilities
     /// </remarks>
     public abstract class ToolTask : Task, ICancelableTask
     {
+        private static bool s_preserveTempFiles = String.Equals(Environment.GetEnvironmentVariable("MSBUILDPRESERVETOOLTEMPFILES"), "1", StringComparison.Ordinal);
+
         #region Constructors
 
         /// <summary>
@@ -222,7 +222,7 @@ namespace Microsoft.Build.Utilities
         /// in addition to (or selectively overriding) the regular environment block.
         /// </summary>
         /// <remarks>
-        /// Using this instead of EnvironmentOverride as that takes a StringDictionary,
+        /// Using this instead of EnvironmentOverride as that takes a Dictionary,
         /// which cannot be set from an MSBuild project.
         /// </remarks>
         public string[] EnvironmentVariables
@@ -294,7 +294,7 @@ namespace Microsoft.Build.Utilities
         /// </summary>
         /// <returns>The new value for the Environment for the task.</returns>
         [Obsolete("Use EnvironmentVariables property")]
-        virtual protected StringDictionary EnvironmentOverride
+        virtual protected Dictionary<string, string> EnvironmentOverride
         {
             get { return null; }
         }
@@ -601,7 +601,7 @@ namespace Microsoft.Build.Utilities
         /// <returns>path to the tool, or null</returns>
         private string ComputePathToTool()
         {
-            string pathToTool;
+            string pathToTool = null;
 
             if (UseCommandProcessor)
             {
@@ -613,7 +613,8 @@ namespace Microsoft.Build.Utilities
                 // If the project author passed in a ToolPath, always use that.
                 pathToTool = Path.Combine(ToolPath, ToolExe);
             }
-            else
+
+            if (string.IsNullOrWhiteSpace(pathToTool) || (ToolPath == null && !File.Exists(pathToTool)))
             {
                 // Otherwise, try to find the tool ourselves.
                 pathToTool = GenerateFullPathToTool();
@@ -644,7 +645,7 @@ namespace Microsoft.Build.Utilities
                 else
                 {
                     // if we just have the file name, search for the file on the system path
-                    string actualPathToTool = NativeMethodsShared.FindOnPath(pathToTool);
+                    string actualPathToTool = ToolTask.FindOnPath(pathToTool);
 
                     // if we find the file
                     if (actualPathToTool != null)
@@ -695,7 +696,7 @@ namespace Microsoft.Build.Utilities
                 responseFile = FileUtilities.GetTemporaryFile(".rsp");
 
                 // Use the encoding specified by the overridable ResponseFileEncoding property
-                using (StreamWriter responseFileStream = new StreamWriter(responseFile, false, this.ResponseFileEncoding))
+                using (StreamWriter responseFileStream = FileUtilities.OpenWrite(responseFile, false, this.ResponseFileEncoding))
                 {
                     responseFileStream.Write(ResponseFileEscape(responseFileCommands));
                 }
@@ -713,7 +714,7 @@ namespace Microsoft.Build.Utilities
         /// <param name="commandLineCommands"></param>
         /// <param name="responseFileSwitch"></param>
         /// <returns>The information required to start the process.</returns>
-        protected ProcessStartInfo GetProcessStartInfo
+        virtual protected ProcessStartInfo GetProcessStartInfo
         (
             string pathToTool,
             string commandLineCommands,
@@ -752,8 +753,13 @@ namespace Microsoft.Build.Utilities
             startInfo.StandardErrorEncoding = StandardErrorEncoding;
             startInfo.StandardOutputEncoding = StandardOutputEncoding;
 
-            // Some applications such as xcopy.exe fail without error if there's no stdin stream.
-            startInfo.RedirectStandardInput = true;
+            if (NativeMethodsShared.IsWindows)
+            {
+                // Some applications such as xcopy.exe fail without error if there's no stdin stream.
+                // We only do it under Windows, we get Pipe Broken IO exception on other systems if
+                // the program terminates very fast.
+                startInfo.RedirectStandardInput = true;
+            }
 
             // Generally we won't set a working directory, and it will use the current directory
             string workingDirectory = GetWorkingDirectory();
@@ -764,12 +770,17 @@ namespace Microsoft.Build.Utilities
 
             // Old style environment overrides
 #pragma warning disable 0618 // obsolete
-            StringDictionary envOverrides = EnvironmentOverride;
+            Dictionary<string, string> envOverrides = EnvironmentOverride;
             if (null != envOverrides)
             {
-                foreach (DictionaryEntry entry in envOverrides)
+                foreach (KeyValuePair<string, string> entry in envOverrides)
                 {
-                    startInfo.EnvironmentVariables[(string)entry.Key] = (string)entry.Value;
+#if FEATURE_PROCESSSTARTINFO_ENVIRONMENT
+                    startInfo.Environment[entry.Key] = entry.Value;
+#else
+                    startInfo.EnvironmentVariables[entry.Key] = entry.Value;
+#endif
+
                 }
 #pragma warning restore 0618
             }
@@ -779,7 +790,11 @@ namespace Microsoft.Build.Utilities
             {
                 foreach (KeyValuePair<object, object> variable in _environmentVariablePairs)
                 {
+#if FEATURE_PROCESSSTARTINFO_ENVIRONMENT
+                    startInfo.Environment[(string)variable.Key] = (string)variable.Value;
+#else
                     startInfo.EnvironmentVariables[(string)variable.Key] = (string)variable.Value;
+#endif
                 }
             }
 
@@ -848,7 +863,10 @@ namespace Microsoft.Build.Utilities
 
                 // Close the input stream. This is done to prevent commands from
                 // blocking the build waiting for input from the user.
-                proc.StandardInput.Close();
+                if (NativeMethodsShared.IsWindows)
+                {
+                    proc.StandardInput.Dispose();
+                }
 
                 // sign up for stderr callbacks
                 proc.BeginErrorReadLine();
@@ -856,8 +874,7 @@ namespace Microsoft.Build.Utilities
                 proc.BeginOutputReadLine();
 
                 // start the time-out timer
-                _toolTimer = new Timer(new TimerCallback(ReceiveTimeoutNotification));
-                _toolTimer.Change(Timeout, System.Threading.Timeout.Infinite /* no periodic timeouts */);
+                _toolTimer = new Timer(new TimerCallback(ReceiveTimeoutNotification), null, Timeout, System.Threading.Timeout.Infinite /* no periodic timeouts */);
 
                 // deal with the various notifications
                 HandleToolNotifications(proc);
@@ -883,7 +900,7 @@ namespace Microsoft.Build.Utilities
                         // Leave the exit code at -1.
                     }
 
-                    proc.Close();
+                    proc.Dispose();
                     proc = null;
                 }
 
@@ -899,11 +916,11 @@ namespace Microsoft.Build.Utilities
                 lock (_eventCloseLock)
                 {
                     _eventsDisposed = true;
-                    _standardErrorDataAvailable.Close();
-                    _standardOutputDataAvailable.Close();
+                    _standardErrorDataAvailable.Dispose();
+                    _standardOutputDataAvailable.Dispose();
 
-                    _toolExited.Close();
-                    _toolTimeoutExpired.Close();
+                    _toolExited.Dispose();
+                    _toolTimeoutExpired.Dispose();
 
                     if (_toolTimer != null)
                     {
@@ -927,17 +944,21 @@ namespace Microsoft.Build.Utilities
         /// Delete temporary file. If the delete fails for some reason (e.g. file locked by anti-virus) then
         /// the call will not throw an exception. Instead a warning will be logged, but the build will not fail.
         /// </summary>
-        /// <param name="filename">File to delete</param>
+        /// <param name="fileName">File to delete</param>
         protected void DeleteTempFile(string fileName)
         {
+            if (s_preserveTempFiles)
+            {
+                Log.LogMessageFromText($"Preserving temporary file '{fileName}'", MessageImportance.Low);
+                return;
+            }
+
             try
             {
                 File.Delete(fileName);
             }
-            catch (Exception e) // Catching Exception, but rethrowing unless it's an IO related exception.
+            catch (Exception e) when (ExceptionHandling.IsIoRelatedException(e))
             {
-                if (ExceptionHandling.NotExpectedException(e))
-                    throw;
                 // Warn only -- occasionally temp files fail to delete because of virus checkers; we 
                 // don't want the build to fail in such cases
                 LogShared.LogWarningWithCodeFromResources("Shared.FailedDeletingTempFile", fileName, e.Message);
@@ -1053,38 +1074,34 @@ namespace Microsoft.Build.Utilities
         /// Kills the given process that is executing the tool, because the tool's
         /// time-out period expired.
         /// </summary>
-        /// <param name="proc"></param>
         private void KillToolProcessOnTimeout(Process proc, bool isBeingCancelled)
         {
             // kill the process if it's not finished yet
             if (!proc.HasExited)
             {
+                string processName;
+                try
+                {
+                    processName = proc.ProcessName;
+                }
+                catch (InvalidOperationException)
+                {
+                    // Process exited in the small interval since we checked HasExited
+                    return;
+                }
+
                 if (!isBeingCancelled)
                 {
                     ErrorUtilities.VerifyThrow(Timeout != System.Threading.Timeout.Infinite,
                         "A time-out value must have been specified or the task must be cancelled.");
 
-                    LogShared.LogWarningWithCodeFromResources("Shared.KillingProcess", this.Timeout);
+                    LogShared.LogWarningWithCodeFromResources("Shared.KillingProcess", processName, this.Timeout);
                 }
                 else
                 {
-                    LogShared.LogWarningWithCodeFromResources("Shared.KillingProcessByCancellation", proc.ProcessName);
+                    LogShared.LogWarningWithCodeFromResources("Shared.KillingProcessByCancellation", processName);
                 }
 
-                try
-                {
-                    // issue the kill command
-                    NativeMethodsShared.KillTree(proc.Id);
-                }
-                catch (InvalidOperationException)
-                {
-                    // The process already exited, which is fine,
-                    // just continue.
-                }
-
-                // wait until the process finishes exiting/getting killed. 
-                // We don't want to wait forever here because the task is already supposed to be dieing, we just want to give it long enough
-                // to try and flush what it can and stop. If it cannot do that in a reasonable time frame then we will just ignore it.
                 int timeout = 5000;
                 string timeoutFromEnvironment = Environment.GetEnvironmentVariable("MSBUILDTOOLTASKCANCELPROCESSWAITTIMEOUT");
                 if (timeoutFromEnvironment != null)
@@ -1096,7 +1113,7 @@ namespace Microsoft.Build.Utilities
                     }
                 }
 
-                proc.WaitForExit(timeout);
+                proc.KillTree(timeout);
             }
         }
 
@@ -1176,6 +1193,7 @@ namespace Microsoft.Build.Utilities
         /// <param name="dataQueue"></param>
         /// <param name="dataAvailableSignal"></param>
         /// <param name="messageImportance"></param>
+        /// <param name="queueType"></param>
         private void LogMessagesFromStandardErrorOrOutput
         (
             Queue dataQueue,
@@ -1416,6 +1434,32 @@ namespace Microsoft.Build.Utilities
             return true;
         }
 
+        /// <summary>
+        /// Looks for the given file in the system path i.e. all locations in the %PATH% environment variable.
+        /// </summary>
+        /// <param name="filename"></param>
+        /// <returns>The location of the file, or null if file not found.</returns>
+        internal static string FindOnPath(string filename)
+        {
+            // Get path from the environment and split path separator
+            return Environment.GetEnvironmentVariable("PATH")?
+                .Split(Path.PathSeparator)?
+                .Where(path =>
+                {
+                    try
+                    {
+                        // The PATH can contain anything, including bad characters
+                        return Directory.Exists(path);
+                    }
+                    catch (Exception)
+                    {
+                        return false;
+                    }
+                })
+                .Select(folderPath => Path.Combine(folderPath, filename))
+                .FirstOrDefault(fullPath => !String.IsNullOrEmpty(fullPath) && File.Exists(fullPath));
+        }
+
         #endregion
 
         #region ITask Members
@@ -1471,32 +1515,54 @@ namespace Microsoft.Build.Utilities
                 // If there are response file commands, then we need a response file later.
                 string batchFileContents = commandLineCommands;
                 string responseFileCommands = GenerateResponseFileCommands();
+                bool runningOnWindows = NativeMethodsShared.IsWindows;
 
                 if (UseCommandProcessor)
                 {
-                    ToolExe = "cmd.exe";
-
-                    // Generate the temporary batch file
-                    // May throw IO-related exceptions
-                    _temporaryBatchFile = FileUtilities.GetTemporaryFile(".cmd");
-
-                    File.AppendAllText(_temporaryBatchFile, commandLineCommands, EncodingUtilities.CurrentSystemOemEncoding);
-
-                    string batchFileForCommandLine = _temporaryBatchFile;
-
-                    // If for some crazy reason the path has a & character and a space in it
-                    // then get the short path of the temp path, which should not have spaces in it
-                    // and then escape the &
-                    if (batchFileForCommandLine.Contains("&") && !batchFileForCommandLine.Contains("^&"))
+                    if (runningOnWindows) // we are Windows
                     {
-                        batchFileForCommandLine = NativeMethodsShared.GetShortFilePath(batchFileForCommandLine);
-                        batchFileForCommandLine = batchFileForCommandLine.Replace("&", "^&");
+                        ToolExe = "cmd.exe";
+                        // Generate the temporary batch file
+                        // May throw IO-related exceptions
+                        _temporaryBatchFile = FileUtilities.GetTemporaryFile(".cmd");
+                    }
+                    else
+                    {
+                        ToolExe = "/bin/sh";
+                        // Generate the temporary batch file
+                        // May throw IO-related exceptions
+                        _temporaryBatchFile = FileUtilities.GetTemporaryFile(".sh");
                     }
 
-                    commandLineCommands = "/C \"" + batchFileForCommandLine + "\"";
-                    if (EchoOff)
+                    if (!runningOnWindows)
                     {
-                        commandLineCommands = "/Q " + commandLineCommands;
+                        // Use sh rather than bash, as not all 'nix systems necessarily have Bash installed
+                        File.AppendAllText(_temporaryBatchFile, "#!/bin/sh\n"); // first line for UNIX is ANSI
+                        // This is a hack..!
+                        File.AppendAllText(_temporaryBatchFile, AdjustCommandsForOperatingSystem(commandLineCommands), EncodingUtilities.CurrentSystemOemEncoding);
+                    }
+                    else
+                    {
+                        File.AppendAllText(_temporaryBatchFile, commandLineCommands, EncodingUtilities.CurrentSystemOemEncoding);
+
+                        string batchFileForCommandLine = _temporaryBatchFile;
+
+                        // If for some crazy reason the path has a & character and a space in it
+                        // then get the short path of the temp path, which should not have spaces in it
+                        // and then escape the &
+                        if (batchFileForCommandLine.Contains("&") && !batchFileForCommandLine.Contains("^&"))
+                        {
+                            batchFileForCommandLine = NativeMethodsShared.GetShortFilePath(batchFileForCommandLine);
+                            batchFileForCommandLine = batchFileForCommandLine.Replace("&", "^&");
+                        }
+
+                        // /D: Do not load AutoRun configuration from the registry (perf)
+                        commandLineCommands = $"{(Traits.Instance.EscapeHatches.UseAutoRunWhenLaunchingProcessUnderCmd ? String.Empty : "/D ")}/C \"{batchFileForCommandLine}\"";
+
+                        if (EchoOff)
+                        {
+                            commandLineCommands = "/Q " + commandLineCommands;
+                        }
                     }
                 }
 
@@ -1540,12 +1606,12 @@ namespace Microsoft.Build.Utilities
 
                 // Old style environment overrides
 #pragma warning disable 0618 // obsolete
-                StringDictionary envOverrides = EnvironmentOverride;
+                Dictionary<string, string> envOverrides = EnvironmentOverride;
                 if (null != envOverrides)
                 {
-                    foreach (DictionaryEntry entry in envOverrides)
+                    foreach (KeyValuePair<string, string> entry in envOverrides)
                     {
-                        alreadyLoggedEnvironmentHeader = LogEnvironmentVariable(alreadyLoggedEnvironmentHeader, (string)entry.Key, (string)entry.Value);
+                        alreadyLoggedEnvironmentHeader = LogEnvironmentVariable(alreadyLoggedEnvironmentHeader, entry.Key, entry.Value);
                     }
 #pragma warning restore 0618
                 }
@@ -1558,6 +1624,9 @@ namespace Microsoft.Build.Utilities
                         alreadyLoggedEnvironmentHeader = LogEnvironmentVariable(alreadyLoggedEnvironmentHeader, (string)variable.Key, (string)variable.Value);
                     }
                 }
+
+                commandLineCommands = AdjustCommandsForOperatingSystem(commandLineCommands);
+                responseFileCommands = AdjustCommandsForOperatingSystem(responseFileCommands);
 
                 if (UseCommandProcessor)
                 {
@@ -1650,10 +1719,50 @@ namespace Microsoft.Build.Utilities
                 // Clean up after ourselves.
                 if (_temporaryBatchFile != null && File.Exists(_temporaryBatchFile))
                 {
-                    File.Delete(_temporaryBatchFile);
+                    DeleteTempFile(_temporaryBatchFile);
                 }
             }
         } // Execute()
+
+        /// <summary>
+        /// Replace backslashes with OS-specific path separators,
+        /// except when likely that the backslash is intentional.
+        /// </summary>
+        /// <remarks>
+        /// Not a static method so that an implementation can
+        /// override with more-specific knowledge of what backslashes
+        /// are likely to be correct.
+        /// </remarks>
+        virtual protected string AdjustCommandsForOperatingSystem(string input)
+        {
+            if (NativeMethodsShared.IsWindows)
+            {
+                return input;
+            }
+
+            StringBuilder sb = new StringBuilder(input);
+
+            int length = sb.Length;
+
+            for (int i = 0; i < length; i++)
+            {
+                // Backslashes must be swapped, because we don't
+                // know what inputs are paths or path fragments.
+                // But it's a common pattern to have backslash-escaped
+                // quotes inside quotes--especially for VB that has a default like
+                //
+                // /define:"CONFIG=\"Debug\",DEBUG=-1,TRACE=-1,_MyType=\"Console\",PLATFORM=\"AnyCPU\""
+                //
+                // So don't replace a backslash immediately
+                // followed by a quote.
+                if (sb[i] == '\\' && (i == length - 1 || sb[i + 1] != '"'))
+                {
+                    sb[i] = Path.DirectorySeparatorChar;
+                }
+            }
+
+            return sb.ToString();
+        }
 
         /// <summary>
         /// This method takes in an exception and if MSBuildDiagnostics is set then it will display the stack trace

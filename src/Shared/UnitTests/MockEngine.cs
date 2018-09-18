@@ -1,14 +1,16 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Text;
 using Microsoft.Build.Evaluation;
 using Microsoft.Build.Execution;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Logging;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Xunit;
+using Xunit.Abstractions;
 
 namespace Microsoft.Build.UnitTests
 {
@@ -26,14 +28,15 @@ namespace Microsoft.Build.UnitTests
      * is somewhat of a no-no for task assemblies.
      * 
      **************************************************************************/
-    sealed internal class MockEngine : IBuildEngine4
+    sealed internal class MockEngine : IBuildEngine5
     {
+        private readonly ITestOutputHelper _output;
+
         private bool _isRunningMultipleNodes;
         private int _messages = 0;
         private int _warnings = 0;
         private int _errors = 0;
-        private string _log = "";
-        private string _upperLog = null;
+        private StringBuilder _log = new StringBuilder();
         private ProjectCollection _projectCollection = new ProjectCollection();
         private bool _logToConsole = false;
         private MockLogger _mockLogger = null;
@@ -72,62 +75,84 @@ namespace Microsoft.Build.UnitTests
             _logToConsole = logToConsole;
         }
 
+        public MockEngine(ITestOutputHelper output)
+        {
+            _output = output;
+            _mockLogger = new MockLogger(output);
+            _logToConsole = false; // We have a better place to put it.
+        }
 
         public void LogErrorEvent(BuildErrorEventArgs eventArgs)
         {
+            string message = string.Empty;
+
             if (eventArgs.File != null && eventArgs.File.Length > 0)
             {
-                if (_logToConsole)
-                    Console.Write("{0}({1},{2}): ", eventArgs.File, eventArgs.LineNumber, eventArgs.ColumnNumber);
-                _log += String.Format("{0}({1},{2}): ", eventArgs.File, eventArgs.LineNumber, eventArgs.ColumnNumber);
+                message += String.Format("{0}({1},{2}): ", eventArgs.File, eventArgs.LineNumber, eventArgs.ColumnNumber);
             }
 
-            if (_logToConsole)
-                Console.Write("ERROR " + eventArgs.Code + ": ");
-            _log += "ERROR " + eventArgs.Code + ": ";
+            message += "ERROR " + eventArgs.Code + ": ";
             ++_errors;
 
+            message += eventArgs.Message;
+
             if (_logToConsole)
-                Console.WriteLine(eventArgs.Message);
-            _log += eventArgs.Message;
-            _log += "\n";
+                Console.WriteLine(message);
+            _output?.WriteLine(message);
+            _log.AppendLine(message);
         }
 
         public void LogWarningEvent(BuildWarningEventArgs eventArgs)
         {
+            string message = string.Empty;
+
             if (eventArgs.File != null && eventArgs.File.Length > 0)
             {
-                if (_logToConsole)
-                    Console.Write("{0}({1},{2}): ", eventArgs.File, eventArgs.LineNumber, eventArgs.ColumnNumber);
-                _log += String.Format("{0}({1},{2}): ", eventArgs.File, eventArgs.LineNumber, eventArgs.ColumnNumber);
+                message += String.Format("{0}({1},{2}): ", eventArgs.File, eventArgs.LineNumber, eventArgs.ColumnNumber);
             }
 
-            if (_logToConsole)
-                Console.Write("WARNING " + eventArgs.Code + ": ");
-            _log += "WARNING " + eventArgs.Code + ": ";
+            message += "WARNING " + eventArgs.Code + ": ";
             ++_warnings;
 
+            message += eventArgs.Message;
+
             if (_logToConsole)
-                Console.WriteLine(eventArgs.Message);
-            _log += eventArgs.Message;
-            _log += "\n";
+                Console.WriteLine(message);
+            _output?.WriteLine(message);
+            _log.AppendLine(message);
         }
 
         public void LogCustomEvent(CustomBuildEventArgs eventArgs)
         {
             if (_logToConsole)
                 Console.WriteLine(eventArgs.Message);
-            _log += eventArgs.Message;
-            _log += "\n";
+            _output?.WriteLine(eventArgs.Message);
+            _log.AppendLine(eventArgs.Message);
         }
 
         public void LogMessageEvent(BuildMessageEventArgs eventArgs)
         {
             if (_logToConsole)
                 Console.WriteLine(eventArgs.Message);
-            _log += eventArgs.Message;
-            _log += "\n";
+            _output?.WriteLine(eventArgs.Message);
+            _log.AppendLine(eventArgs.Message);
             ++_messages;
+        }
+
+        public void LogTelemetry(string eventName, IDictionary<string, string> properties)
+        {
+            string message = $"Received telemetry event '{eventName}'{Environment.NewLine}";
+            foreach (string key in properties?.Keys)
+            {
+                message += $"  Property '{key}' = '{properties[key]}'{Environment.NewLine}";
+            }
+
+            if (_logToConsole)
+            {
+                Console.WriteLine(message);
+            }
+            _output?.WriteLine(message);
+            _log.AppendLine(message);
         }
 
         public bool ContinueOnError
@@ -164,8 +189,16 @@ namespace Microsoft.Build.UnitTests
 
         internal string Log
         {
-            set { _log = value; }
-            get { return _log; }
+            set
+            {
+                if (!string.IsNullOrEmpty(value))
+                {
+                    throw new ArgumentException("Expected log setter to be used only to reset the log to empty.");
+                }
+
+                _log.Clear();
+            }
+            get { return _log.ToString(); }
         }
 
         public bool IsRunningMultipleNodes
@@ -374,60 +407,51 @@ namespace Microsoft.Build.UnitTests
         /// First check if the string is in the log string. If not
         /// than make sure it is also check the MockLogger
         /// </summary>
-        /// <param name="contains"></param>
         internal void AssertLogContains(string contains)
         {
-            if (_upperLog == null)
-            {
-                _upperLog = _log;
-                _upperLog = _upperLog.ToUpperInvariant();
-            }
-
             // If we do not contain this string than pass it to
             // MockLogger. Since MockLogger is also registered as
             // a logger it may have this string.
-            if (!_upperLog.Contains
-                (
-                    contains.ToUpperInvariant()
-                )
-              )
+            var logText = _log.ToString();
+            if (logText.IndexOf(contains, StringComparison.OrdinalIgnoreCase) == -1)
             {
-                Console.WriteLine(_log);
+                if (_output == null)
+                {
+                    Console.WriteLine(logText);
+                }
+                else
+                {
+                    _output.WriteLine(logText);
+                }
+
                 _mockLogger.AssertLogContains(contains);
             }
         }
 
         /// <summary>
-        /// Assert that the log doesnt contain the given string.
+        /// Assert that the log doesn't contain the given string.
         /// First check if the string is in the log string. If not
         /// than make sure it is also not in the MockLogger
         /// </summary>
-        /// <param name="contains"></param>
         internal void AssertLogDoesntContain(string contains)
         {
-            Console.WriteLine(_log);
-
-            if (_upperLog == null)
+            var logText = _log.ToString();
+            
+            if (_output == null)
             {
-                _upperLog = _log;
-                _upperLog = _upperLog.ToUpperInvariant();
+                Console.WriteLine(logText);
+            }
+            else
+            {
+                _output.WriteLine(logText);
             }
 
-            Assert.IsTrue
-            (
-                !_upperLog.Contains
-                (
-                    contains.ToUpperInvariant()
-                )
-            );
+            Assert.Equal(-1, logText.IndexOf(contains, StringComparison.OrdinalIgnoreCase));
 
             // If we do not contain this string than pass it to
             // MockLogger. Since MockLogger is also registered as
             // a logger it may have this string.
-            _mockLogger.AssertLogDoesntContain
-            (
-                contains
-            );
+            _mockLogger.AssertLogDoesntContain(contains);
         }
 
         /// <summary>

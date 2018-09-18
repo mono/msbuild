@@ -89,12 +89,25 @@ namespace Microsoft.Build.Shared
         internal BuildEventFileInfo(XmlException e)
         {
             ErrorUtilities.VerifyThrow(e != null, "Need exception context.");
-
+#if FEATURE_XML_SOURCE_URI
             _file = (e.SourceUri.Length == 0) ? String.Empty : new Uri(e.SourceUri).LocalPath;
+#else
+            _file = String.Empty;
+#endif
             _line = e.LineNumber;
             _column = e.LinePosition;
             _endLine = 0;
             _endColumn = 0;
+        }
+
+        /// <summary>
+        /// Creates an instance of this class using the information in the given XmlException and file location.
+        /// </summary>
+        internal BuildEventFileInfo(string file, XmlException e) : this(e)
+        {
+            ErrorUtilities.VerifyThrowArgumentNull(file, nameof(file));
+
+            _file = file;
         }
 
         #endregion

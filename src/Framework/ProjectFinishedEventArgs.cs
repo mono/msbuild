@@ -4,6 +4,7 @@
 using System.Runtime.InteropServices;
 using System;
 using System.IO;
+using Microsoft.Build.Shared;
 
 namespace Microsoft.Build.Framework
 {
@@ -68,12 +69,12 @@ namespace Microsoft.Build.Framework
         )
             : base(message, helpKeyword, "MSBuild", eventTimestamp)
         {
-            _projectFile = projectFile;
-            _succeeded = succeeded;
+            this.projectFile = projectFile;
+            this.succeeded = succeeded;
         }
 
-        private string _projectFile;
-        private bool _succeeded;
+        private string projectFile;
+        private bool succeeded;
 
         #region CustomSerializationToStream
         /// <summary>
@@ -84,17 +85,8 @@ namespace Microsoft.Build.Framework
         {
             base.WriteToStream(writer);
 
-            if (_projectFile == null)
-            {
-                writer.Write((byte)0);
-            }
-            else
-            {
-                writer.Write((byte)1);
-                writer.Write(_projectFile);
-            }
-
-            writer.Write(_succeeded);
+            writer.WriteOptionalString(projectFile);
+            writer.Write(succeeded);
         }
 
         /// <summary>
@@ -106,39 +98,19 @@ namespace Microsoft.Build.Framework
         {
             base.CreateFromStream(reader, version);
 
-            if (reader.ReadByte() == 0)
-            {
-                _projectFile = null;
-            }
-            else
-            {
-                _projectFile = reader.ReadString();
-            }
-
-            _succeeded = reader.ReadBoolean();
+            projectFile = reader.ReadByte() == 0 ? null : reader.ReadString();
+            succeeded = reader.ReadBoolean();
         }
         #endregion
 
         /// <summary>
         /// Project name
         /// </summary>
-        public string ProjectFile
-        {
-            get
-            {
-                return _projectFile;
-            }
-        }
+        public string ProjectFile => projectFile;
 
         /// <summary>
         /// True if project built successfully, false otherwise
         /// </summary>
-        public bool Succeeded
-        {
-            get
-            {
-                return _succeeded;
-            }
-        }
+        public bool Succeeded => succeeded;
     }
 }

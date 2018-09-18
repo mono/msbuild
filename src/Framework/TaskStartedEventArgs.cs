@@ -7,6 +7,7 @@
 
 using System;
 using System.IO;
+using Microsoft.Build.Shared;
 
 namespace Microsoft.Build.Framework
 {
@@ -75,14 +76,14 @@ namespace Microsoft.Build.Framework
         )
             : base(message, helpKeyword, "MSBuild", eventTimestamp)
         {
-            _taskName = taskName;
-            _projectFile = projectFile;
-            _taskFile = taskFile;
+            this.taskName = taskName;
+            this.projectFile = projectFile;
+            this.taskFile = taskFile;
         }
 
-        private string _taskName;
-        private string _projectFile;
-        private string _taskFile;
+        private string taskName;
+        private string projectFile;
+        private string taskFile;
 
         #region CustomSerializationToStream
         /// <summary>
@@ -92,39 +93,10 @@ namespace Microsoft.Build.Framework
         internal override void WriteToStream(BinaryWriter writer)
         {
             base.WriteToStream(writer);
-            #region TaskName
-            if (_taskName == null)
-            {
-                writer.Write((byte)0);
-            }
-            else
-            {
-                writer.Write((byte)1);
-                writer.Write(_taskName);
-            }
-            #endregion
-            #region ProjectFile
-            if (_projectFile == null)
-            {
-                writer.Write((byte)0);
-            }
-            else
-            {
-                writer.Write((byte)1);
-                writer.Write(_projectFile);
-            }
-            #endregion
-            #region TaskFile
-            if (_taskFile == null)
-            {
-                writer.Write((byte)0);
-            }
-            else
-            {
-                writer.Write((byte)1);
-                writer.Write(_taskFile);
-            }
-            #endregion
+
+            writer.WriteOptionalString(taskName);
+            writer.WriteOptionalString(projectFile);
+            writer.WriteOptionalString(taskFile);
         }
 
         /// <summary>
@@ -135,70 +107,26 @@ namespace Microsoft.Build.Framework
         internal override void CreateFromStream(BinaryReader reader, int version)
         {
             base.CreateFromStream(reader, version);
-            #region TaskName
-            if (reader.ReadByte() == 0)
-            {
-                _taskName = null;
-            }
-            else
-            {
-                _taskName = reader.ReadString();
-            }
-            #endregion
-            #region ProjectFile
-            if (reader.ReadByte() == 0)
-            {
-                _projectFile = null;
-            }
-            else
-            {
-                _projectFile = reader.ReadString();
-            }
-            #endregion
-            #region TaskFile
-            if (reader.ReadByte() == 0)
-            {
-                _taskFile = null;
-            }
-            else
-            {
-                _taskFile = reader.ReadString();
-            }
-            #endregion
+
+            taskName = reader.ReadByte() == 0 ? null : reader.ReadString();
+            projectFile = reader.ReadByte() == 0 ? null : reader.ReadString();
+            taskFile = reader.ReadByte() == 0 ? null : reader.ReadString();
         }
         #endregion
 
         /// <summary>
         /// Task name.
         /// </summary>
-        public string TaskName
-        {
-            get
-            {
-                return _taskName;
-            }
-        }
+        public string TaskName => taskName;
 
         /// <summary>
         /// Project file associated with event.   
         /// </summary>
-        public string ProjectFile
-        {
-            get
-            {
-                return _projectFile;
-            }
-        }
+        public string ProjectFile => projectFile;
 
         /// <summary>
         /// MSBuild file where this task was defined.   
         /// </summary>
-        public string TaskFile
-        {
-            get
-            {
-                return _taskFile;
-            }
-        }
+        public string TaskFile => taskFile;
     }
 }

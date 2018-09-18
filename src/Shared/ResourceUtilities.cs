@@ -7,11 +7,9 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Text.RegularExpressions;
-#if DEBUG && !BUILDING_DF_LKG
-using Microsoft.Build.Framework;
-#endif
 using System.Reflection;
 using System.Text;
+using System.ComponentModel;
 
 #if BUILDINGAPPXTASKS
 namespace Microsoft.Build.AppxPackage.Shared
@@ -174,6 +172,13 @@ namespace Microsoft.Build.Shared
             return ExtractMessageCode(true /* msbuildCodeOnly */, FormatString(GetResourceString(resourceName), args), out code);
         }
 
+        [Obsolete("Use GetResourceString instead.", true)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        internal static string FormatResourceString(string resourceName)
+        {   // Avoids an accidental dependency on FormatResourceString(string, params object[])
+            return null;
+        }
+
         /// <summary>
         /// Looks up a string in the resources, and formats it with the arguments passed in. If the string resource has an MSBuild
         /// message code and help keyword associated with it, they are discarded.
@@ -211,7 +216,7 @@ namespace Microsoft.Build.Shared
             // NOTE: String.Format() does not allow a null arguments array
             if ((args != null) && (args.Length > 0))
             {
-#if DEBUG && !BUILDING_DF_LKG
+#if DEBUG
 
 #if VALIDATERESOURCESTRINGS
                 // The code below reveals many places in our codebase where
@@ -296,17 +301,23 @@ namespace Microsoft.Build.Shared
             }
             catch (ArgumentException e)
             {
+#if FEATURE_DEBUG_LAUNCH
                 Debug.Fail("The resource string \"" + resourceName + "\" was not found.");
+#endif
                 ErrorUtilities.ThrowInternalError(e.Message);
             }
             catch (InvalidOperationException e)
             {
+#if FEATURE_DEBUG_LAUNCH
                 Debug.Fail("The resource string \"" + resourceName + "\" was not found.");
+#endif
                 ErrorUtilities.ThrowInternalError(e.Message);
             }
             catch (MissingManifestResourceException e)
             {
+#if FEATURE_DEBUG_LAUNCH
                 Debug.Fail("The resource string \"" + resourceName + "\" was not found.");
+#endif
                 ErrorUtilities.ThrowInternalError(e.Message);
             }
 #endif

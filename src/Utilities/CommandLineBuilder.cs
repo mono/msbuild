@@ -5,8 +5,7 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Text;
-using System.Resources;
-using System.Globalization;
+
 using Microsoft.Build.Framework;
 using System.Text.RegularExpressions;
 using Microsoft.Build.Shared;
@@ -77,6 +76,15 @@ namespace Microsoft.Build.Utilities
             _quoteHyphens = quoteHyphensOnCommandLine;
         }
 
+        /// <summary>
+        /// Default constructor
+        /// </summary>
+        public CommandLineBuilder(bool quoteHyphensOnCommandLine, bool useNewLineSeparator)
+            : this(quoteHyphensOnCommandLine)
+        {
+            _useNewLineSeparator = useNewLineSeparator;
+        }
+
         #endregion
 
         #region Properties
@@ -137,7 +145,12 @@ namespace Microsoft.Build.Utilities
         /// <summary>
         ///  Should hyphens be quoted or not
         /// </summary>
-        private bool _quoteHyphens = false;
+        private readonly bool _quoteHyphens = false;
+
+        /// <summary>
+        /// Should use new line separators instead of spaces to separate arguments.
+        /// </summary>
+        private readonly bool _useNewLineSeparator = false;
 
         /// <summary>
         /// Instead of defining which characters must be quoted, define 
@@ -243,16 +256,23 @@ namespace Microsoft.Build.Utilities
         }
 
         /// <summary>
-        /// Add a space to the specified string if and only if it's not empty. 
+        /// Add a space or newline to the specified string if and only if it's not empty.
         /// </summary>
         /// <remarks>
         /// This is a pretty obscure method and so it's only available to inherited classes.
         /// </remarks>
         protected void AppendSpaceIfNotEmpty()
         {
-            if (CommandLine.Length != 0 && CommandLine[CommandLine.Length - 1] != ' ')
+            if (CommandLine.Length != 0)
             {
-                CommandLine.Append(" ");
+                if (_useNewLineSeparator)
+                {
+                    CommandLine.Append(Environment.NewLine);
+                }
+                else if(CommandLine[CommandLine.Length - 1] != ' ')
+                {
+                    CommandLine.Append(" ");
+                }
             }
         }
 
@@ -302,9 +322,6 @@ namespace Microsoft.Build.Utilities
                 }
                 if (literalQuotes > 0)
                 {
-                    // Command line parsers typically break if you attempt to pass in an odd number of
-                    // escaped double quotes. We can only error if there isn't an even number.
-                    ErrorUtilities.VerifyThrowArgument(((literalQuotes % 2) == 0), "General.StringsCannotContainOddNumberOfDoubleQuotes", unquotedTextToAppend);
                     // Replace any \" sequences with \\"
                     unquotedTextToAppend = unquotedTextToAppend.Replace("\\\"", "\\\\\"");
                     // Now replace any " with \"
@@ -367,9 +384,10 @@ namespace Microsoft.Build.Utilities
                 // their own quotes. Quotes are illegal.
                 VerifyThrowNoEmbeddedDoubleQuotes(string.Empty, fileName);
 
+                fileName = FileUtilities.FixFilePath(fileName);
                 if ((fileName.Length != 0) && (fileName[0] == '-'))
                 {
-                    AppendTextWithQuoting(".\\" + fileName);
+                    AppendTextWithQuoting("." + Path.DirectorySeparatorChar + fileName);
                 }
                 else
                 {

@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
@@ -8,12 +8,12 @@ using System.Text;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
-using System.Globalization;
 using System.Linq;
 
 using Microsoft.Build.Framework;
 using Microsoft.Build.Shared;
-using System.Runtime.InteropServices;
+
+#if FEATURE_FILE_TRACKER
 
 namespace Microsoft.Build.Utilities
 {
@@ -60,7 +60,7 @@ namespace Microsoft.Build.Utilities
     {
         #region Static Member Data
         // The default path to temp, used to create explicitly short and long paths
-        private static string s_tempPath = Path.GetDirectoryName(Path.GetTempPath());
+        private static string s_tempPath = Path.GetTempPath();
 
         // The short path to temp
         private static string s_tempShortPath = FileUtilities.EnsureTrailingSlash(NativeMethodsShared.GetShortFilePath(s_tempPath).ToUpperInvariant());
@@ -69,14 +69,26 @@ namespace Microsoft.Build.Utilities
         private static string s_tempLongPath = FileUtilities.EnsureTrailingSlash(NativeMethodsShared.GetLongFilePath(s_tempPath).ToUpperInvariant());
 
         // The path to ApplicationData (is equal to %USERPROFILE%\Application Data folder in Windows XP and %USERPROFILE%\AppData\Roaming in Vista and later)
+#if FEATURE_SPECIAL_FOLDERS
         private static string s_applicationDataPath = FileUtilities.EnsureTrailingSlash(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData).ToUpperInvariant());
+#else
+        private static string s_applicationDataPath = FileUtilities.EnsureTrailingSlash(FileUtilities.GetFolderPath(FileUtilities.SpecialFolder.ApplicationData).ToUpperInvariant());
+#endif
 
         // The path to LocalApplicationData (is equal to %USERPROFILE%\Local Settings\Application Data folder in Windows XP and %USERPROFILE%\AppData\Local in Vista and later).
+#if FEATURE_SPECIAL_FOLDERS
         private static string s_localApplicationDataPath = FileUtilities.EnsureTrailingSlash(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData).ToUpperInvariant());
+#else
+            private static string s_localApplicationDataPath = FileUtilities.EnsureTrailingSlash(FileUtilities.GetFolderPath(FileUtilities.SpecialFolder.LocalApplicationData).ToUpperInvariant());
+#endif
 
         // The path to the LocalLow folder. In Vista and later, user application data is organized across %USERPROFILE%\AppData\LocalLow,  %USERPROFILE%\AppData\Local (%LOCALAPPDATA%) 
         // and %USERPROFILE%\AppData\Roaming (%APPDATA%). The LocalLow folder is not present in XP.
+#if FEATURE_SPECIAL_FOLDERS
         private static string s_localLowApplicationDataPath = FileUtilities.EnsureTrailingSlash(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "AppData\\LocalLow").ToUpperInvariant());
+#else
+        private static string s_localLowApplicationDataPath = FileUtilities.EnsureTrailingSlash(Path.Combine(FileUtilities.GetFolderPath(FileUtilities.SpecialFolder.UserProfile), "AppData\\LocalLow").ToUpperInvariant());
+#endif
 
         // The path to the common Application Data, which is also used by some programs (e.g. antivirus) that we wish to ignore.
         // Is equal to C:\Documents and Settings\All Users\Application Data on XP, and C:\ProgramData on Vista+.
@@ -87,8 +99,9 @@ namespace Microsoft.Build.Utilities
         // The name of the standalone tracker tool.
         private static string s_TrackerFilename = "Tracker.exe";
 
-        // The name of the assembly that is injected into the executing process
-        private static string s_FileTrackerFilename = "FileTracker.dll";
+        // The name of the assembly that is injected into the executing process.
+        // Detours handles picking between FileTracker{32,64}.dll so only mention one.
+        private static string s_FileTrackerFilename = "FileTracker32.dll";
         #endregion
 
         #region Static constructor
@@ -97,7 +110,11 @@ namespace Microsoft.Build.Utilities
         {
             s_commonApplicationDataPaths = new List<string>();
 
+#if FEATURE_SPECIAL_FOLDERS
             string defaultCommonApplicationDataPath = FileUtilities.EnsureTrailingSlash(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData).ToUpperInvariant());
+#else
+            string defaultCommonApplicationDataPath = FileUtilities.EnsureTrailingSlash(FileUtilities.GetFolderPath(FileUtilities.SpecialFolder.CommonApplicationData).ToUpperInvariant());
+#endif
             s_commonApplicationDataPaths.Add(defaultCommonApplicationDataPath);
 
             string defaultRootDirectory = Path.GetPathRoot(defaultCommonApplicationDataPath);
@@ -163,6 +180,7 @@ namespace Microsoft.Build.Utilities
         /// <param name="intermediateDirectory">The directory into which to write the tracking log files</param>
         /// <param name="taskName">The name of the task calling this function, used to determine the 
         /// names of the tracking log files</param>
+        /// <param name="rootMarkerResponseFile">The path to the root marker response file.</param>
         public static void StartTrackingContextWithRoot(string intermediateDirectory, string taskName, string rootMarkerResponseFile)
         {
             InprocTrackingNativeMethods.StartTrackingContextWithRoot(intermediateDirectory, taskName, rootMarkerResponseFile);
@@ -257,7 +275,7 @@ namespace Microsoft.Build.Utilities
         /// <param name="fileName">
         /// Full path of the file to test
         /// </param>
-        /// <param name="filePath">
+        /// <param name="path">
         /// Is the file under this full path?
         /// </param>
         public static bool FileIsUnderPath(string fileName, string path)
@@ -279,9 +297,7 @@ namespace Microsoft.Build.Utilities
         /// <summary>
         /// Construct a rooting marker string from the ITaskItem array of primary sources.
         /// </summary>
-        /// <param name="sources">
-        /// ITaskItem array of primary sources.
-        /// </param>
+        /// <param name="source">An <see cref="ITaskItem"/> containing information about the primary source.</param>
         public static string FormatRootingMarker(ITaskItem source)
         {
             return FormatRootingMarker(new ITaskItem[] { source }, null);
@@ -290,9 +306,8 @@ namespace Microsoft.Build.Utilities
         /// <summary>
         /// Construct a rooting marker string from the ITaskItem array of primary sources.
         /// </summary>
-        /// <param name="sources">
-        /// ITaskItem array of primary sources.
-        /// </param>
+        /// <param name="source">An <see cref="ITaskItem"/> containing information about the primary source.</param>
+        /// <param name="output">An <see cref="ITaskItem"/> containing information about the output.</param>
         public static string FormatRootingMarker(ITaskItem source, ITaskItem output)
         {
             return FormatRootingMarker(new ITaskItem[] { source }, new ITaskItem[] { output });
@@ -315,6 +330,7 @@ namespace Microsoft.Build.Utilities
         /// <param name="sources">
         /// ITaskItem array of primary sources.
         /// </param>
+        /// <param name="outputs">ITaskItem array of outputs.</param>
         public static string FormatRootingMarker(ITaskItem[] sources, ITaskItem[] outputs)
         {
             ErrorUtilities.VerifyThrowArgumentNull(sources, "sources");
@@ -357,7 +373,9 @@ namespace Microsoft.Build.Utilities
         /// Given a set of source files in the form of ITaskItem, creates a temporary response
         /// file containing the rooting marker that corresponds to those sources. 
         /// </summary>
-        /// <param name="rootMarker">The rooting marker to put in the response file.</param>
+        /// <param name="sources">
+        /// ITaskItem array of primary sources.
+        /// </param>
         /// <returns>The response file path.</returns>
         public static string CreateRootingMarkerResponseFile(ITaskItem[] sources)
         {
@@ -444,14 +462,9 @@ namespace Microsoft.Build.Utilities
                         return trackerPath;
                     }
                 }
-                catch (Exception e)
+                catch (Exception e) when (ExceptionHandling.IsIoRelatedException(e))
                 {
-                    if (ExceptionHandling.NotExpectedException(e))
-                    {
-                        throw;
-                    }
-
-                    // Otherwise, just ignore this path and move on -- it's just bad for some reason. 
+                    // ignore this path and move on -- it's just bad for some reason. 
                 }
             }
 
@@ -473,12 +486,12 @@ namespace Microsoft.Build.Utilities
         /// Determines whether we must track out-of-proc, or whether inproc tracking will work. 
         /// </summary>
         /// <param name="toolType">The executable type for the tool being tracked</param>
+        /// <param name="dllName">An optional assembly name.</param>
         /// <param name="cancelEventName">The name of the cancel event tracker should listen for, or null if there isn't one</param>
         /// <returns>True if we need to track out-of-proc, false if inproc tracking is OK</returns>
         public static bool ForceOutOfProcTracking(ExecutableType toolType, string dllName, string cancelEventName)
         {
             bool trackOutOfProc = false;
-            string trackerPath = null;
 
             if (cancelEventName != null)
             {
@@ -488,37 +501,12 @@ namespace Microsoft.Build.Utilities
             else if (dllName != null)
             {
                 // If we have a DLL name, we need to track out of proc -- inproc tracking just uses
-                // the default FileTracker.dll from the path. 
+                // the default FileTracker
                 trackOutOfProc = true;
             }
-            else if (IntPtr.Size == sizeof(Int32))
-            {
-                // Current process is 32-bit.  So we need to spawn Tracker.exe if our tool is 
-                // explicitly marked as 64-bit OR is MSIL and we're installed on a 64-bit OS.  
-                if (toolType == ExecutableType.Managed64Bit || toolType == ExecutableType.Native64Bit)
-                {
-                    trackOutOfProc = true;
-                }
-                else if (toolType == ExecutableType.ManagedIL)
-                {
-                    trackerPath = ToolLocationHelper.GetPathToDotNetFrameworkFile(s_TrackerFilename, TargetDotNetFrameworkVersion.VersionLatest, DotNetFrameworkArchitecture.Bitness64);
 
-                    if (trackerPath != null)
-                    {
-                        // If we found a 64-bit path, we're on a 64-bit OS and need to use it.  Otherwise, we're fine. 
-                        trackOutOfProc = true;
-                    }
-                }
-            }
-            else if (IntPtr.Size == sizeof(Int64))
-            {
-                // Current process is 64-bit.  We need to spawn Tracker.exe if our tool is
-                // explicitly marked as 32-bit.  
-                if (toolType == ExecutableType.Managed32Bit || toolType == ExecutableType.Native32Bit)
-                {
-                    trackOutOfProc = true;
-                }
-            }
+            // toolType is not relevant now that Detours can handle child processes of a different
+            // bitness than the parent.
 
             return trackOutOfProc;
         }
@@ -528,7 +516,7 @@ namespace Microsoft.Build.Utilities
         /// know about our current bitness, figures out and returns the path to the correct
         /// Tracker.exe. 
         /// </summary>
-        /// <param name="toolExecutableTypeToUse">The executable type of the tool being wrapped</param>
+        /// <param name="toolType">The <see cref="ExecutableType"/> of the tool being wrapped</param>
         public static string GetTrackerPath(ExecutableType toolType)
         {
             return GetTrackerPath(toolType, null);
@@ -539,7 +527,7 @@ namespace Microsoft.Build.Utilities
         /// know about our current bitness, figures out and returns the path to the correct
         /// Tracker.exe. 
         /// </summary>
-        /// <param name="toolExecutableTypeToUse">The executable type of the tool being wrapped</param>
+        /// <param name="toolType">The <see cref="ExecutableType"/> of the tool being wrapped</param>
         /// <param name="rootPath">The root path for Tracker.exe.  Overrides the toolType if specified.</param>
         public static string GetTrackerPath(ExecutableType toolType, string rootPath)
         {
@@ -551,7 +539,7 @@ namespace Microsoft.Build.Utilities
         /// know about our current bitness, figures out and returns the path to the correct
         /// FileTracker.dll. 
         /// </summary>
-        /// <param name="toolExecutableTypeToUse">The executable type of the tool being wrapped</param>
+        /// <param name="toolType">The <see cref="ExecutableType"/> of the tool being wrapped</param>
         public static string GetFileTrackerPath(ExecutableType toolType)
         {
             return GetFileTrackerPath(toolType, null);
@@ -562,7 +550,7 @@ namespace Microsoft.Build.Utilities
         /// know about our current bitness, figures out and returns the path to the correct
         /// FileTracker.dll. 
         /// </summary>
-        /// <param name="toolExecutableTypeToUse">The executable type of the tool being wrapped</param>
+        /// <param name="toolType">The <see cref="ExecutableType"/> of the tool being wrapped</param>
         /// <param name="rootPath">The root path for FileTracker.dll.  Overrides the toolType if specified.</param>
         public static string GetFileTrackerPath(ExecutableType toolType, string rootPath)
         {
@@ -587,60 +575,15 @@ namespace Microsoft.Build.Utilities
                 if (!File.Exists(trackerPath))
                 {
                     // if an override path was specified, that's it -- we don't want to fall back if the file
-                    // is not found there.  
+                    // is not found there.
                     trackerPath = null;
                 }
             }
             else
             {
-                switch (toolType)
-                {
-                    case ExecutableType.Native32Bit:
-                        // A native executable that's 32-bit.  Just return the 32-bit path 
-                        trackerPath = GetPath(filename, DotNetFrameworkArchitecture.Bitness32);
-                        break;
-                    case ExecutableType.Native64Bit:
-                        // A native executable that's 64-bit.  Just return the 64-bit path 
-                        trackerPath = GetPath(filename, DotNetFrameworkArchitecture.Bitness64);
-                        break;
-                    case ExecutableType.ManagedIL:
-                        // Next most likely -- the tool is a managed executable that has not been explicitly marked
-                        // either 32 or 64 bit.  
-                        // This case is slightly tricky -- we have to return the path to the 64-bit tracker if we're running 
-                        // on a 64-bit machine, and the 32-bit tracker if we're running on a 32-bit machine.  
-                        trackerPath = GetPath(filename, DotNetFrameworkArchitecture.Bitness64);
-
-                        // If the path is null, that means there is no 64-bit framework -- that's fine, return the 32-bit path instead. 
-                        if (trackerPath == null)
-                        {
-                            trackerPath = GetPath(filename, DotNetFrameworkArchitecture.Bitness32);
-                        }
-                        break;
-                    case ExecutableType.Managed32Bit:
-                        // A managed executable that has been explicitly marked 32-bit.  Just return the 32-bit path.  
-                        trackerPath = GetPath(filename, DotNetFrameworkArchitecture.Bitness32);
-                        break;
-                    case ExecutableType.Managed64Bit:
-                        // A managed executable that has been explicitly marked 64-bit.  Just return the 64-bit path.  If this 
-                        // is a 32-bit machine, then we will return null, and the error will be caught and handled appropriately 
-                        // elsewhere. 
-                        trackerPath = GetPath(filename, DotNetFrameworkArchitecture.Bitness64);
-                        break;
-                    case ExecutableType.SameAsCurrentProcess:
-                        // Figure out what bitness the current process is and return that bitness of Tracker.exe.  
-                        if (IntPtr.Size == sizeof(Int32))
-                        {
-                            trackerPath = GetPath(filename, DotNetFrameworkArchitecture.Bitness32);
-                        }
-                        else
-                        {
-                            trackerPath = GetPath(filename, DotNetFrameworkArchitecture.Bitness64);
-                        }
-                        break;
-                    default:
-                        ErrorUtilities.ThrowInternalErrorUnreachable();
-                        return null;
-                }
+                // Since Detours can handle cross-bitness process launches, the toolType
+                // can be ignored; just return the path corresponding to the current architecture.
+                trackerPath = GetPath(filename, DotNetFrameworkArchitecture.Current);
             }
 
             return trackerPath;
@@ -655,8 +598,6 @@ namespace Microsoft.Build.Utilities
         /// <returns></returns>
         private static string GetPath(string filename, DotNetFrameworkArchitecture bitness)
         {
-            string trackerPath;
-
             // Make sure that if someone starts passing the wrong thing to this method we don't silently 
             // eat it and do something possibly unexpected. 
             ErrorUtilities.VerifyThrow(
@@ -666,31 +607,26 @@ namespace Microsoft.Build.Utilities
                                        filename
                                        );
 
-            // Look for FileTracker.dll/FileTracker.exe first in the MSBuild tools directory, then fall back to .NET framework directory
-            // and finally to .NET SDK directories.
-            trackerPath = ToolLocationHelper.GetPathToBuildToolsFile(filename, ToolLocationHelper.CurrentToolsVersion, bitness);
+            // Look for FileTracker.dll/Tracker.exe in the MSBuild tools directory. They may exist elsewhere on disk,
+            // but other copies aren't guaranteed to be compatible with the latest.
+            var path = ToolLocationHelper.GetPathToBuildToolsFile(filename, ToolLocationHelper.CurrentToolsVersion, bitness);
 
-            if (String.IsNullOrEmpty(trackerPath))
+            // Due to a Detours limitation, the path to FileTracker32.dll must be
+            // representable in ANSI characters. Look for it first in the global
+            // shared location which is guaranteed to be ANSI. Fall back to
+            // current folder.
+            if (s_FileTrackerFilename.Equals(filename, StringComparison.OrdinalIgnoreCase))
             {
-                trackerPath = ToolLocationHelper.GetPathToDotNetFrameworkFile(filename, TargetDotNetFrameworkVersion.VersionLatest, bitness);
+                string progfilesPath = Path.Combine(FrameworkLocationHelper.GenerateProgramFiles32(),
+                    "MSBuild", MSBuildConstants.CurrentProductVersion, "FileTracker", s_FileTrackerFilename);
 
-                if ((String.IsNullOrEmpty(trackerPath) || !File.Exists(trackerPath)) && s_TrackerFilename.Equals(filename, StringComparison.OrdinalIgnoreCase))
+                if (File.Exists(progfilesPath))
                 {
-                    // fall back to looking in the SDK directory -- this is where Tracker.exe will be in the typical VS case.  First check 
-                    // in the SDK for the latest target framework and latest Visual Studio version, since we want to make sure that we get 
-                    // the most up-to-date version of FileTracker.  
-                    trackerPath = ToolLocationHelper.GetPathToDotNetFrameworkSdkFile(filename, TargetDotNetFrameworkVersion.Version45, VisualStudioVersion.VersionLatest, bitness);
-
-                    // If that didn't work, we may be in a scenario where, e.g., we have VS 10 on Windows 8, which comes with .NET 4.5
-                    // pre-installed.  In which case, the Dev11 (or other "latest" SDK) may not exist, but the Dev10 SDK might.  Check 
-                    // for that here. 
-                    if (trackerPath == null)
-                    {
-                        trackerPath = ToolLocationHelper.GetPathToDotNetFrameworkSdkFile(filename, TargetDotNetFrameworkVersion.Version40, bitness);
-                    }
+                    return progfilesPath;
                 }
             }
-            return trackerPath;
+
+            return path;
         }
 
         /// <summary>
@@ -891,6 +827,7 @@ namespace Microsoft.Build.Utilities
         /// Logs a message of the given importance using the specified string.
         /// </summary>
         /// <remarks>This method is not thread-safe.</remarks>
+        /// <param name="Log">The Log to log to.</param>
         /// <param name="importance">The importance level of the message.</param>
         /// <param name="message">The message string.</param>
         /// <param name="messageArgs">Optional arguments for formatting the message string.</param>
@@ -907,6 +844,7 @@ namespace Microsoft.Build.Utilities
         /// <summary>
         /// Logs a warning using the specified resource string.
         /// </summary>
+        /// <param name="Log">The Log to log to.</param>
         /// <param name="messageResourceName">The name of the string resource to load.</param>
         /// <param name="messageArgs">Optional arguments for formatting the loaded string.</param>
         /// <exception cref="ArgumentNullException">Thrown when <c>messageResourceName</c> is null.</exception>
@@ -930,3 +868,5 @@ namespace Microsoft.Build.Utilities
     /// <returns>If the file should actually be written to the TLog (true) or not (false)</returns>
     public delegate bool DependencyFilter(string fullPath);
 }
+
+#endif

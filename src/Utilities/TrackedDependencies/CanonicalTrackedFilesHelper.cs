@@ -2,12 +2,11 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 
 using Microsoft.Build.Framework;
 using Microsoft.Build.Shared;
+
+#if FEATURE_FILE_TRACKER
 
 namespace Microsoft.Build.Utilities
 {
@@ -93,7 +92,7 @@ namespace Microsoft.Build.Utilities
             {
                 foreach (ITaskItem item in files)
                 {
-                    DateTime lastWriteTime = NativeMethods.GetLastWriteTimeUtc(item.ItemSpec);
+                    DateTime lastWriteTime = NativeMethodsShared.GetLastWriteFileUtcTime(item.ItemSpec);
                     // If the file does not exist
                     if (lastWriteTime == DateTime.MinValue)
                     {
@@ -118,3 +117,5 @@ namespace Microsoft.Build.Utilities
         }
     }
 }
+
+#endif

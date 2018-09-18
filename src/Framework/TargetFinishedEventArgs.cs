@@ -5,6 +5,7 @@ using System.Runtime.InteropServices;
 using System;
 using System.IO;
 using System.Collections;
+using Microsoft.Build.Shared;
 
 namespace Microsoft.Build.Framework
 {
@@ -90,6 +91,7 @@ namespace Microsoft.Build.Framework
         /// <param name="targetFile">file in which the target is defined</param>
         /// <param name="succeeded">true if target built successfully</param>
         /// <param name="eventTimestamp">Timestamp when the event was created</param>
+        /// <param name="targetOutputs">An <see cref="IEnumerable"/> containing the outputs of the target.</param>
         public TargetFinishedEventArgs
         (
             string message,
@@ -103,18 +105,18 @@ namespace Microsoft.Build.Framework
         )
             : base(message, helpKeyword, "MSBuild", eventTimestamp)
         {
-            _targetName = targetName;
-            _succeeded = succeeded;
-            _projectFile = projectFile;
-            _targetFile = targetFile;
-            _targetOutputs = targetOutputs;
+            this.targetName = targetName;
+            this.succeeded = succeeded;
+            this.projectFile = projectFile;
+            this.targetFile = targetFile;
+            this.targetOutputs = targetOutputs;
         }
 
-        private string _projectFile;
-        private string _targetFile;
-        private string _targetName;
-        private bool _succeeded;
-        private IEnumerable _targetOutputs;
+        private string projectFile;
+        private string targetFile;
+        private string targetName;
+        private bool succeeded;
+        private IEnumerable targetOutputs;
 
         #region CustomSerializationToStream
         /// <summary>
@@ -124,40 +126,12 @@ namespace Microsoft.Build.Framework
         internal override void WriteToStream(BinaryWriter writer)
         {
             base.WriteToStream(writer);
-            #region ProjectFile
-            if (_projectFile == null)
-            {
-                writer.Write((byte)0);
-            }
-            else
-            {
-                writer.Write((byte)1);
-                writer.Write(_projectFile);
-            }
-            #endregion
-            #region TargetFile
-            if (_targetFile == null)
-            {
-                writer.Write((byte)0);
-            }
-            else
-            {
-                writer.Write((byte)1);
-                writer.Write(_targetFile);
-            }
-            #endregion TargetFile
-            #region TargetName
-            if (_targetName == null)
-            {
-                writer.Write((byte)0);
-            }
-            else
-            {
-                writer.Write((byte)1);
-                writer.Write(_targetName);
-            }
-            #endregion
-            writer.Write(_succeeded);
+
+            writer.WriteOptionalString(projectFile);
+            writer.WriteOptionalString(targetFile);
+            writer.WriteOptionalString(targetName);
+
+            writer.Write(succeeded);
         }
 
         /// <summary>
@@ -168,98 +142,42 @@ namespace Microsoft.Build.Framework
         internal override void CreateFromStream(BinaryReader reader, int version)
         {
             base.CreateFromStream(reader, version);
-            #region ProjectFile
-            if (reader.ReadByte() == 0)
-            {
-                _projectFile = null;
-            }
-            else
-            {
-                _projectFile = reader.ReadString();
-            }
-            #endregion
-            #region TargetFile
-            if (reader.ReadByte() == 0)
-            {
-                _targetFile = null;
-            }
-            else
-            {
-                _targetFile = reader.ReadString();
-            }
-            #endregion
-            #region TargetName
-            if (reader.ReadByte() == 0)
-            {
-                _targetName = null;
-            }
-            else
-            {
-                _targetName = reader.ReadString();
-            }
-            #endregion
-            _succeeded = reader.ReadBoolean();
+
+            projectFile = reader.ReadByte() == 0 ? null : reader.ReadString();
+            targetFile = reader.ReadByte() == 0 ? null : reader.ReadString();
+            targetName = reader.ReadByte() == 0 ? null : reader.ReadString();
+
+            succeeded = reader.ReadBoolean();
         }
         #endregion
 
         /// <summary>
         /// Target name
         /// </summary>
-        public string TargetName
-        {
-            get
-            {
-                return _targetName;
-            }
-        }
+        public string TargetName => targetName;
 
         /// <summary>
         /// True if target built successfully, false otherwise
         /// </summary>
-        public bool Succeeded
-        {
-            get
-            {
-                return _succeeded;
-            }
-        }
+        public bool Succeeded => succeeded;
 
         /// <summary>
         /// Project file associated with event.   
         /// </summary>
-        public string ProjectFile
-        {
-            get
-            {
-                return _projectFile;
-            }
-        }
+        public string ProjectFile => projectFile;
 
         /// <summary>
         /// File where this target was declared.
         /// </summary>
-        public string TargetFile
-        {
-            get
-            {
-                return _targetFile;
-            }
-        }
+        public string TargetFile => targetFile;
 
         /// <summary>
         /// Target outputs
         /// </summary>
         public IEnumerable TargetOutputs
         {
-            get
-            {
-                return _targetOutputs;
-            }
-
-            set
-            {
-                _targetOutputs = value;
-            }
+            get => targetOutputs;
+            set => targetOutputs = value;
         }
     }
 }

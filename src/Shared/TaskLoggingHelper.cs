@@ -2,15 +2,16 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Resources;
 using System.Text;
-using System.Text.RegularExpressions;
-using System.Runtime.InteropServices;
+#if FEATURE_APPDOMAIN
 using System.Runtime.Remoting.Lifetime;
 using System.Runtime.Remoting;
+#endif
 
 using Microsoft.Build.Framework;
 using Microsoft.Build.Shared;
@@ -32,7 +33,10 @@ namespace Microsoft.Build.Utilities
 #else
     public
 #endif
- class TaskLoggingHelper : MarshalByRefObject
+ class TaskLoggingHelper
+#if FEATURE_APPDOMAIN
+        : MarshalByRefObject
+#endif
     {
         #region Constructors
 
@@ -50,7 +54,6 @@ namespace Microsoft.Build.Utilities
         /// <summary>
         /// Public constructor which can be used by task factories to assist them in logging messages.
         /// </summary>
-        /// <param name="taskInstance">task containing an instance of this class</param>
         public TaskLoggingHelper(IBuildEngine buildEngine, string taskName)
         {
             ErrorUtilities.VerifyThrowArgumentNull(buildEngine, "buildEngine");
@@ -63,12 +66,14 @@ namespace Microsoft.Build.Utilities
 
         #region Properties
 
+#if FEATURE_APPDOMAIN
         /// <summary>
         /// A client sponsor is a class
         /// which will respond to a lease renewal request and will
         /// increase the lease time allowing the object to stay in memory
         /// </summary>
         private ClientSponsor _sponsor;
+#endif
 
         // We have to pass an instance of ITask to BuildEngine, and since we call into the engine from this class we
         // need to store the actual task instance.
@@ -105,7 +110,7 @@ namespace Microsoft.Build.Utilities
                 if (_taskNameUpperCase == null)
                 {
                     // NOTE: use the current thread culture, because this string will be displayed to the user
-                    _taskNameUpperCase = TaskName.ToUpper(CultureInfo.CurrentCulture);
+                    _taskNameUpperCase = TaskName.ToUpper();
                 }
 
                 return _taskNameUpperCase;
@@ -1234,7 +1239,7 @@ namespace Microsoft.Build.Utilities
 
             // Command-line tools are generally going to emit their output using the current 
             // codepage, so that it displays correctly in the console window.  
-            using (StreamReader fileStream = new StreamReader(fileName, System.Text.Encoding.Default)) // HIGHCHAR: Use ANSI for logging messages.
+            using (StreamReader fileStream = FileUtilities.OpenRead(fileName, System.Text.Encoding.GetEncoding(0))) // HIGHCHAR: Use ANSI for logging messages.
             {
                 errorsFound = LogMessagesFromStream(fileStream, messageImportance);
             }
@@ -1355,6 +1360,21 @@ namespace Microsoft.Build.Utilities
 
         #endregion
 
+        #region Telemetry logging methods
+
+        /// <summary>
+        /// Logs telemetry with the specified event name and properties.
+        /// </summary>
+        /// <param name="eventName">The event name.</param>
+        /// <param name="properties">The list of properties associated with the event.</param>
+        public void LogTelemetry(string eventName, IDictionary<string, string> properties)
+        {
+            (BuildEngine as IBuildEngine5)?.LogTelemetry(eventName, properties);
+        }
+
+        #endregion
+
+#if FEATURE_APPDOMAIN
         #region AppDomain Code
 
         /// <summary>
@@ -1447,5 +1467,6 @@ namespace Microsoft.Build.Utilities
         }
 
         #endregion
+#endif
     }
 }

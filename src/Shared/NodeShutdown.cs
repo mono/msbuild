@@ -110,7 +110,7 @@ namespace Microsoft.Build.BackEnd
         public void Translate(INodePacketTranslator translator)
         {
             translator.TranslateEnum(ref _reason, (int)_reason);
-            translator.TranslateDotNet(ref _exception);
+            translator.TranslateException(ref _exception);
         }
 
         /// <summary>

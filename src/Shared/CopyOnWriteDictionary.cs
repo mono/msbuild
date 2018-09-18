@@ -9,7 +9,6 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
 using Microsoft.Build.Shared;
 using Microsoft.Build.Internal;
@@ -51,12 +50,12 @@ namespace Microsoft.Build.Collections
         /// <summary>
         /// The equality comparer to use when the dictionary is created.
         /// </summary>
-        private readonly IEqualityComparer<K> _keyComparer;
+        private readonly IEqualityComparer<K> keyComparer;
 
         /// <summary>
         /// The default capacity.
         /// </summary>
-        private readonly int _capacity;
+        private readonly int capacity;
 
         /// <summary>
         /// A special single dummy instance that always appears empty.
@@ -67,7 +66,7 @@ namespace Microsoft.Build.Collections
         /// The backing dictionary.
         /// Lazily created.
         /// </summary>
-        private CopyOnWriteBackingDictionary<K, V> _backing;
+        private CopyOnWriteBackingDictionary<K, V> backing;
 
         /// <summary>
         /// Constructor. Consider supplying a comparer instead.
@@ -97,8 +96,8 @@ namespace Microsoft.Build.Collections
         /// </summary>
         internal CopyOnWriteDictionary(int capacity, IEqualityComparer<K> keyComparer)
         {
-            _capacity = capacity;
-            _keyComparer = keyComparer;
+            this.capacity = capacity;
+            this.keyComparer = keyComparer;
         }
 
         /// <summary>
@@ -115,14 +114,22 @@ namespace Microsoft.Build.Collections
         /// </summary>
         private CopyOnWriteDictionary(CopyOnWriteDictionary<K, V> that)
         {
-            _keyComparer = that._keyComparer;
-            _backing = that._backing;
-            if (_backing != null)
+            keyComparer = that.keyComparer;
+            backing = that.backing;
+            if (backing != null)
             {
-                lock (((ICollection)_backing).SyncRoot)
+                lock (((ICollection)backing).SyncRoot)
                 {
-                    _backing.AddRef();
+                    backing.AddRef();
                 }
+            }
+        }
+
+        public CopyOnWriteDictionary(IDictionary<K, V> dictionary)
+        {
+            foreach (var pair in dictionary)
+            {
+                this[pair.Key] = pair.Value;
             }
         }
 
@@ -234,7 +241,7 @@ namespace Microsoft.Build.Collections
             {
                 if (Object.ReferenceEquals(this, Dummy))
                 {
-                    ErrorUtilities.VerifyThrow(_backing == null || _backing.Count == 0, "count"); // check count without recursion
+                    ErrorUtilities.VerifyThrow(backing == null || backing.Count == 0, "count"); // check count without recursion
                     return true;
                 }
 
@@ -247,7 +254,7 @@ namespace Microsoft.Build.Collections
         /// </summary>
         internal IEqualityComparer<K> Comparer
         {
-            get { return _keyComparer; }
+            get { return keyComparer; }
         }
 
         /// <summary>
@@ -257,7 +264,7 @@ namespace Microsoft.Build.Collections
         {
             get
             {
-                ErrorUtilities.VerifyThrow(!IsDummy || _backing == null || _backing.Count == 0, "count"); // check count without recursion
+                ErrorUtilities.VerifyThrow(!IsDummy || backing == null || backing.Count == 0, "count"); // check count without recursion
 #if DEBUG
                 if (s_forceWrite)
                 {
@@ -267,12 +274,12 @@ namespace Microsoft.Build.Collections
                     }
                 }
 #endif
-                if (_backing == null)
+                if (backing == null)
                 {
                     return CopyOnWriteBackingDictionary<K, V>.ReadOnlyEmptyInstance;
                 }
 
-                return _backing;
+                return backing;
             }
         }
 
@@ -285,19 +292,19 @@ namespace Microsoft.Build.Collections
             {
                 ErrorUtilities.VerifyThrow(!IsDummy, "dummy");
 
-                if (_backing == null)
+                if (backing == null)
                 {
-                    _backing = new CopyOnWriteBackingDictionary<K, V>(_capacity, _keyComparer);
+                    backing = new CopyOnWriteBackingDictionary<K, V>(capacity, keyComparer);
                 }
                 else
                 {
-                    lock (((ICollection)_backing).SyncRoot)
+                    lock (((ICollection)backing).SyncRoot)
                     {
-                        _backing = _backing.CloneForWriteIfNecessary();
+                        backing = backing.CloneForWriteIfNecessary();
                     }
                 }
 
-                return _backing;
+                return backing;
             }
         }
 
@@ -537,7 +544,7 @@ namespace Microsoft.Build.Collections
         /// </summary>
         internal bool HasSameBacking(CopyOnWriteDictionary<K, V> other)
         {
-            return Object.ReferenceEquals(other._backing, _backing);
+            return Object.ReferenceEquals(other.backing, backing);
         }
 
         /// <summary>

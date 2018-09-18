@@ -7,27 +7,23 @@
 //-----------------------------------------------------------------------
 
 using System;
-using System.Xml;
-using System.Diagnostics;
-using System.Collections;
 using System.Collections.Generic;
-using System.Collections.Specialized;
+using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.IO.Pipes;
-using System.Reflection;
 using System.Runtime.InteropServices;
-using System.Text;
-using System.Text.RegularExpressions;
-using System.Globalization;
-using System.Xml.Serialization;
-using System.Security;
-using System.Security.Policy;
-using System.Security.Permissions;
-using System.Security.AccessControl;
 using System.Security.Principal;
 using System.Threading;
 
 using Microsoft.Build.Shared;
+using System.Reflection;
+using System.Security.Cryptography;
+using System.Text;
+
+#if !FEATURE_APM
+using System.Threading.Tasks;
+#endif
 
 namespace Microsoft.Build.Internal
 {
@@ -129,12 +125,21 @@ namespace Microsoft.Build.Internal
                     // them, so just check COMPLUS_InstallRoot.
                     string complusInstallRoot = Environment.GetEnvironmentVariable("COMPLUS_INSTALLROOT");
 
-                    // We should also check the file version when COMPLUS_INSTALLROOT is null, because the protocol can change between releases.
-                    // If we don't check, we'll run into issues
-                    string taskhostexe = FileUtilities.ExecutingAssemblyPath;
-                    string majorVersion = FileVersionInfo.GetVersionInfo(taskhostexe).FileMajorPart.ToString();
+#if THISASSEMBLY
+                    var fileIdentity = ThisAssembly.AssemblyInformationalVersion;
+#else
+                    var fileIdentity = string.Empty;
 
-                    s_fileVersionHash = GetHandshakeHashCode(complusInstallRoot ?? majorVersion);
+                    using (var sha1 = SHA1.Create())
+                    {
+                        var hashBytes = sha1.ComputeHash(File.ReadAllBytes(AssemblyUtilities.GetAssemblyLocation(typeof(CommunicationsUtilities).Assembly)));
+                        fileIdentity = Encoding.UTF8.GetString(hashBytes);
+                    }
+
+                    ErrorUtilities.VerifyThrow(!string.IsNullOrEmpty(fileIdentity), "file hashing failed");
+#endif
+
+                    s_fileVersionHash = GetHandshakeHashCode(complusInstallRoot ?? fileIdentity);
                     s_fileVersionChecked = true;
                 }
 
@@ -155,129 +160,111 @@ namespace Microsoft.Build.Internal
         internal static unsafe extern bool FreeEnvironmentStrings(char* pStrings);
 
         /// <summary>
-        /// Move a block of chars
-        /// </summary>
-        [DllImport("kernel32.dll", EntryPoint = "RtlMoveMemory")]
-        internal static unsafe extern void CopyMemory(char* destination, char* source, uint length);
-
-        /// <summary>
-        /// Retrieve the environment block.
-        /// Copied from the BCL implementation to eliminate some expensive security asserts.
-        /// </summary>
-        internal unsafe static char[] GetEnvironmentCharArray()
-        {
-            char[] block = null;
-            char* pStrings = null;
-
-            try
-            {
-                pStrings = GetEnvironmentStrings();
-                if (pStrings == null)
-                {
-                    throw new OutOfMemoryException();
-                }
-
-                // Format for GetEnvironmentStrings is:
-                // [=HiddenVar=value\0]* [Variable=value\0]* \0
-                // See the description of Environment Blocks in MSDN's
-                // CreateProcess page (null-terminated array of null-terminated strings).
-
-                // Search for terminating \0\0 (two unicode \0's).
-                char* p = pStrings;
-                while (!(*p == '\0' && *(p + 1) == '\0'))
-                {
-                    p++;
-                }
-
-                uint chars = (uint)(p - pStrings + 1);
-                uint bytes = chars * sizeof(char);
-
-                block = new char[chars];
-
-                fixed (char* pBlock = block)
-                {
-                    CopyMemory(pBlock, pStrings, bytes);
-                }
-            }
-            finally
-            {
-                if (pStrings != null)
-                {
-                    FreeEnvironmentStrings(pStrings);
-                }
-            }
-
-            return block;
-        }
-
-        /// <summary>
         /// Copied from the BCL implementation to eliminate some expensive security asserts.
         /// Returns key value pairs of environment variables in a new dictionary
         /// with a case-insensitive key comparer.
         /// </summary>
         internal static Dictionary<string, string> GetEnvironmentVariables()
         {
-            char[] block = GetEnvironmentCharArray();
-
             Dictionary<string, string> table = new Dictionary<string, string>(200, StringComparer.OrdinalIgnoreCase); // Razzle has 150 environment variables
 
-            // Copy strings out, parsing into pairs and inserting into the table.
-            // The first few environment variable entries start with an '='!
-            // The current working directory of every drive (except for those drives
-            // you haven't cd'ed into in your DOS window) are stored in the 
-            // environment block (as =C:=pwd) and the program's exit code is 
-            // as well (=ExitCode=00000000)  Skip all that start with =.
-            // Read docs about Environment Blocks on MSDN's CreateProcess page.
-
-            // Format for GetEnvironmentStrings is:
-            // (=HiddenVar=value\0 | Variable=value\0)* \0
-            // See the description of Environment Blocks in MSDN's
-            // CreateProcess page (null-terminated array of null-terminated strings).
-            // Note the =HiddenVar's aren't always at the beginning.
-            for (int i = 0; i < block.Length; i++)
+            if (NativeMethodsShared.IsWindows)
             {
-                int startKey = i;
-
-                // Skip to key
-                // On some old OS, the environment block can be corrupted. 
-                // Someline will not have '=', so we need to check for '\0'. 
-                while (block[i] != '=' && block[i] != '\0')
+                unsafe
                 {
-                    i++;
-                }
+                    char* pEnvironmentBlock = null;
 
-                if (block[i] == '\0')
-                {
-                    continue;
-                }
-
-                // Skip over environment variables starting with '='
-                if (i - startKey == 0)
-                {
-                    while (block[i] != 0)
+                    try
                     {
-                        i++;
+                        pEnvironmentBlock = GetEnvironmentStrings();
+                        if (pEnvironmentBlock == null)
+                        {
+                            throw new OutOfMemoryException();
+                        }
+
+                        // Search for terminating \0\0 (two unicode \0's).
+                        char* pEnvironmentBlockEnd = pEnvironmentBlock;
+                        while (!(*pEnvironmentBlockEnd == '\0' && *(pEnvironmentBlockEnd + 1) == '\0'))
+                        {
+                            pEnvironmentBlockEnd++;
+                        }
+                        long stringBlockLength = pEnvironmentBlockEnd - pEnvironmentBlock;
+
+                        // Copy strings out, parsing into pairs and inserting into the table.
+                        // The first few environment variable entries start with an '='!
+                        // The current working directory of every drive (except for those drives
+                        // you haven't cd'ed into in your DOS window) are stored in the 
+                        // environment block (as =C:=pwd) and the program's exit code is 
+                        // as well (=ExitCode=00000000)  Skip all that start with =.
+                        // Read docs about Environment Blocks on MSDN's CreateProcess page.
+
+                        // Format for GetEnvironmentStrings is:
+                        // (=HiddenVar=value\0 | Variable=value\0)* \0
+                        // See the description of Environment Blocks in MSDN's
+                        // CreateProcess page (null-terminated array of null-terminated strings).
+                        // Note the =HiddenVar's aren't always at the beginning.
+                        for (int i = 0; i < stringBlockLength; i++)
+                        {
+                            int startKey = i;
+
+                            // Skip to key
+                            // On some old OS, the environment block can be corrupted. 
+                            // Some lines will not have '=', so we need to check for '\0'. 
+                            while (*(pEnvironmentBlock + i) != '=' && *(pEnvironmentBlock + i) != '\0')
+                            {
+                                i++;
+                            }
+
+                            if (*(pEnvironmentBlock + i) == '\0')
+                            {
+                                continue;
+                            }
+
+                            // Skip over environment variables starting with '='
+                            if (i - startKey == 0)
+                            {
+                                while (*(pEnvironmentBlock + i) != 0)
+                                {
+                                    i++;
+                                }
+
+                                continue;
+                            }
+
+                            string key = new string(pEnvironmentBlock, startKey, i - startKey);
+                            i++;
+
+                            // skip over '='
+                            int startValue = i;
+
+                            while (*(pEnvironmentBlock + i) != 0)
+                            {
+                                // Read to end of this entry
+                                i++;
+                            }
+
+                            string value = new string(pEnvironmentBlock, startValue, i - startValue);
+
+                            // skip over 0 handled by for loop's i++
+                            table[key] = value;
+                        }
                     }
-
-                    continue;
+                    finally
+                    {
+                        if (pEnvironmentBlock != null)
+                        {
+                            FreeEnvironmentStrings(pEnvironmentBlock);
+                        }
+                    }
                 }
-
-                string key = new string(block, startKey, i - startKey);
-                i++;
-
-                // skip over '='
-                int startValue = i;
-
-                while (block[i] != 0)
+            }
+            else
+            {
+                var vars = Environment.GetEnvironmentVariables();
+                foreach (var key in vars.Keys)
                 {
-                    // Read to end of this entry 
-                    i++;
+                    table[(string) key] = (string) vars[key];
                 }
-
-                string value = new string(block, startValue, i - startValue);
-
-                // skip over 0 handled by for loop's i++
-                table[key] = value;
             }
 
             return table;
@@ -313,6 +300,7 @@ namespace Microsoft.Build.Internal
         /// </summary>
         internal static long GenerateHostHandshakeFromBase(long baseHandshake, long clientHandshake)
         {
+#if FEATURE_SECURITY_PRINCIPAL_WINDOWS
             // If we are running in elevated privs, we will only accept a handshake from an elevated process as well.
             WindowsPrincipal principal = new WindowsPrincipal(WindowsIdentity.GetCurrent());
 
@@ -331,6 +319,7 @@ namespace Microsoft.Build.Internal
                     baseHandshake = ~baseHandshake;
                 }
             }
+#endif
 
             // Mask out the first byte. That's because old
             // builds used a single, non zero initial byte,
@@ -444,6 +433,23 @@ namespace Microsoft.Build.Internal
             return result;
         }
 
+#if !FEATURE_APM
+        internal static async Task<int> ReadAsync(Stream stream, byte[] buffer, int bytesToRead)
+        {
+            int totalBytesRead = 0;
+            while (totalBytesRead < bytesToRead)
+            {
+                int bytesRead = await stream.ReadAsync(buffer, totalBytesRead, bytesToRead - totalBytesRead);
+                if (bytesRead == 0)
+                {
+                    return totalBytesRead;
+                }
+                totalBytesRead += bytesRead;
+            }
+            return totalBytesRead;
+        }
+#endif
+
         /// <summary>
         /// Given the appropriate information, return the equivalent TaskHostContext.  
         /// </summary>
@@ -519,7 +525,7 @@ namespace Microsoft.Build.Internal
             // We know that whichever assembly is executing this code -- whether it's MSBuildTaskHost.exe or 
             // Microsoft.Build.dll -- is of the version of the CLR that this process is running.  So grab
             // the version of mscorlib currently in use and call that good enough.  
-            Version mscorlibVersion = typeof(bool).Assembly.GetName().Version;
+            Version mscorlibVersion = typeof(bool).GetTypeInfo().Assembly.GetName().Version;
 
             string currentMSBuildArchitecture = XMakeAttributes.GetCurrentMSBuildArchitecture();
             TaskHostContext hostContext = GetTaskHostContext(currentMSBuildArchitecture.Equals(XMakeAttributes.MSBuildArchitectureValues.x64), mscorlibVersion.Major);
@@ -586,11 +592,11 @@ namespace Microsoft.Build.Internal
 
                     fileName += ".txt";
 
-                    using (StreamWriter file = new StreamWriter(String.Format(CultureInfo.CurrentCulture, Path.Combine(s_debugDumpPath, fileName), Process.GetCurrentProcess().Id, nodeId), true))
+                    using (StreamWriter file = FileUtilities.OpenWrite(String.Format(CultureInfo.CurrentCulture, Path.Combine(s_debugDumpPath, fileName), Process.GetCurrentProcess().Id, nodeId), append: true))
                     {
                         string message = String.Format(CultureInfo.CurrentCulture, format, args);
                         long now = DateTime.UtcNow.Ticks;
-                        float millisecondsSinceLastLog = (float)((now - s_lastLoggedTicks) / 10000L);
+                        float millisecondsSinceLastLog = (float)(now - s_lastLoggedTicks) / 10000L;
                         s_lastLoggedTicks = now;
                         file.WriteLine("{0} (TID {1}) {2,15} +{3,10}ms: {4}", Thread.CurrentThread.Name, Thread.CurrentThread.ManagedThreadId, now, millisecondsSinceLastLog, message);
                     }

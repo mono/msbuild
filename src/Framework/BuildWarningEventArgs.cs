@@ -4,6 +4,7 @@
 using System.Runtime.InteropServices;
 using System;
 using System.IO;
+using Microsoft.Build.Shared;
 
 namespace Microsoft.Build.Framework
 {
@@ -125,23 +126,23 @@ namespace Microsoft.Build.Framework
         )
             : base(message, helpKeyword, senderName, eventTimestamp, messageArgs)
         {
-            _subcategory = subcategory;
-            _code = code;
-            _file = file;
-            _lineNumber = lineNumber;
-            _columnNumber = columnNumber;
-            _endLineNumber = endLineNumber;
-            _endColumnNumber = endColumnNumber;
+            this.subcategory = subcategory;
+            this.code = code;
+            this.file = file;
+            this.lineNumber = lineNumber;
+            this.columnNumber = columnNumber;
+            this.endLineNumber = endLineNumber;
+            this.endColumnNumber = endColumnNumber;
         }
 
-        private string _subcategory;
-        private string _code;
-        private string _file;
-        private string _projectFile;
-        private int _lineNumber;
-        private int _columnNumber;
-        private int _endLineNumber;
-        private int _endColumnNumber;
+        private string subcategory;
+        private string code;
+        private string file;
+        private string projectFile;
+        private int lineNumber;
+        private int columnNumber;
+        private int endLineNumber;
+        private int endColumnNumber;
 
         #region CustomSerializationToStream
         /// <summary>
@@ -151,54 +152,16 @@ namespace Microsoft.Build.Framework
         internal override void WriteToStream(BinaryWriter writer)
         {
             base.WriteToStream(writer);
-            #region SubCategory
-            if (_subcategory == null)
-            {
-                writer.Write((byte)0);
-            }
-            else
-            {
-                writer.Write((byte)1);
-                writer.Write(_subcategory);
-            }
-            #endregion
-            #region Code
-            if (_code == null)
-            {
-                writer.Write((byte)0);
-            }
-            else
-            {
-                writer.Write((byte)1);
-                writer.Write(_code);
-            }
-            #endregion
-            #region File
-            if (_file == null)
-            {
-                writer.Write((byte)0);
-            }
-            else
-            {
-                writer.Write((byte)1);
-                writer.Write(_file);
-            }
-            #endregion
-            #region ProjectFile
-            if (_projectFile == null)
-            {
-                writer.Write((byte)0);
-            }
-            else
-            {
-                writer.Write((byte)1);
-                writer.Write(_projectFile);
-            }
-            #endregion
-            writer.Write((Int32)_lineNumber);
-            writer.Write((Int32)_columnNumber);
-            writer.Write((Int32)_endLineNumber);
-            writer.Write((Int32)_endColumnNumber);
+
+            writer.WriteOptionalString(subcategory);
+            writer.WriteOptionalString(code);
+            writer.WriteOptionalString(file);
+            writer.WriteOptionalString(projectFile);
+
+            writer.Write((Int32)lineNumber);
+            writer.Write((Int32)columnNumber);
+            writer.Write((Int32)endLineNumber);
+            writer.Write((Int32)endColumnNumber);
         }
 
         /// <summary>
@@ -209,146 +172,65 @@ namespace Microsoft.Build.Framework
         internal override void CreateFromStream(BinaryReader reader, int version)
         {
             base.CreateFromStream(reader, version);
-            #region SubCategory
-            if (reader.ReadByte() == 0)
-            {
-                _subcategory = null;
-            }
-            else
-            {
-                _subcategory = reader.ReadString();
-            }
-            #endregion
-            #region Code
-            if (reader.ReadByte() == 0)
-            {
-                _code = null;
-            }
-            else
-            {
-                _code = reader.ReadString();
-            }
-            #endregion
-            #region File
-            if (reader.ReadByte() == 0)
-            {
-                _file = null;
-            }
-            else
-            {
-                _file = reader.ReadString();
-            }
-            #endregion
-            #region ProjectFile
+
+            subcategory = reader.ReadByte() == 0 ? null : reader.ReadString();
+            code = reader.ReadByte() == 0 ? null : reader.ReadString();
+            file = reader.ReadByte() == 0 ? null : reader.ReadString();
+
             if (version > 20)
             {
-                if (reader.ReadByte() == 0)
-                {
-                    _projectFile = null;
-                }
-                else
-                {
-                    _projectFile = reader.ReadString();
-                }
+                projectFile = reader.ReadByte() == 0 ? null : reader.ReadString();
             }
-            #endregion
-            _lineNumber = reader.ReadInt32();
-            _columnNumber = reader.ReadInt32();
-            _endLineNumber = reader.ReadInt32();
-            _endColumnNumber = reader.ReadInt32();
+
+            lineNumber = reader.ReadInt32();
+            columnNumber = reader.ReadInt32();
+            endLineNumber = reader.ReadInt32();
+            endColumnNumber = reader.ReadInt32();
         }
         #endregion
+
         /// <summary>
         /// The custom sub-type of the event.         
         /// </summary>
-        public string Subcategory
-        {
-            get
-            {
-                return _subcategory;
-            }
-        }
+        public string Subcategory => subcategory;
 
         /// <summary>
         /// Code associated with event. 
         /// </summary>
-        public string Code
-        {
-            get
-            {
-                return _code;
-            }
-        }
+        public string Code => code;
 
         /// <summary>
         /// File associated with event.   
         /// </summary>
-        public string File
-        {
-            get
-            {
-                return _file;
-            }
-        }
+        public string File => file;
 
         /// <summary>
         /// Line number of interest in associated file. 
         /// </summary>
-        public int LineNumber
-        {
-            get
-            {
-                return _lineNumber;
-            }
-        }
+        public int LineNumber => lineNumber;
 
         /// <summary>
         /// Column number of interest in associated file. 
         /// </summary>
-        public int ColumnNumber
-        {
-            get
-            {
-                return _columnNumber;
-            }
-        }
+        public int ColumnNumber => columnNumber;
 
         /// <summary>
         /// Ending line number of interest in associated file. 
         /// </summary>
-        public int EndLineNumber
-        {
-            get
-            {
-                return _endLineNumber;
-            }
-        }
+        public int EndLineNumber => endLineNumber;
 
         /// <summary>
         /// Ending column number of interest in associated file. 
         /// </summary>
-        public int EndColumnNumber
-        {
-            get
-            {
-                return _endColumnNumber;
-            }
-        }
+        public int EndColumnNumber => endColumnNumber;
 
         /// <summary>
         /// The project which was building when the message was issued.
         /// </summary>
         public string ProjectFile
         {
-            get
-            {
-                return _projectFile;
-            }
-
-            set
-            {
-                _projectFile = value;
-            }
+            get => projectFile;
+            set => projectFile = value;
         }
     }
 }

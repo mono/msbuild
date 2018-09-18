@@ -4,7 +4,6 @@
 using System;
 using System.IO;
 using System.Diagnostics;
-using System.Configuration;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Threading;
@@ -397,6 +396,34 @@ namespace Microsoft.Build.Shared
             }
         }
 
+        /// <summary>
+        /// Overload for four string format arguments.
+        /// </summary>
+        /// <param name="condition"></param>
+        /// <param name="resourceName"></param>
+        /// <param name="arg0"></param>
+        /// <param name="arg1"></param>
+        /// <param name="arg2"></param>
+        /// <param name="arg3"></param>
+        internal static void VerifyThrowInvalidOperation
+        (
+            bool condition,
+            string resourceName,
+            object arg0,
+            object arg1,
+            object arg2,
+            object arg3
+        )
+        {
+            // PERF NOTE: check the condition here instead of pushing it into
+            // the ThrowInvalidOperation() method, because that method always
+            // allocates memory for its variable array of arguments
+            if (!condition)
+            {
+                ThrowInvalidOperation(resourceName, arg0, arg1, arg2, arg3);
+            }
+        }
+
         #endregion
 
         #region VerifyThrowArgument
@@ -692,6 +719,22 @@ namespace Microsoft.Build.Shared
             if (parameter.Length == 0 && s_throwExceptions)
             {
                 throw new ArgumentException(ResourceUtilities.FormatResourceString("Shared.ParameterCannotHaveZeroLength", parameterName));
+            }
+        }
+        
+        /// <summary>
+        /// Throws an ArgumentNullException if the given string parameter is null
+        /// and ArgumentException if it has zero length.
+        /// </summary>
+        /// <param name="parameter"></param>
+        /// <param name="parameterName"></param>
+        internal static void VerifyThrowArgumentInvalidPath(string parameter, string parameterName)
+        {
+            VerifyThrowArgumentNull(parameter, parameterName);
+
+            if (FileUtilities.PathIsInvalid(parameter) && s_throwExceptions)
+            {
+                throw new ArgumentException(ResourceUtilities.FormatResourceString("Shared.ParameterCannotHaveInvalidPathChars", parameterName, parameter));
             }
         }
 

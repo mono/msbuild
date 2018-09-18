@@ -12,8 +12,13 @@ using System.Text;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Shared;
 
+#if FEATURE_FILE_TRACKER
+
 namespace Microsoft.Build.Utilities
 {
+    /// <summary>
+    /// Class used to store and interrogate inputs and outputs recorded by tracking operations.
+    /// </summary>
     public class FlatTrackingData
     {
         #region Constants
@@ -68,12 +73,7 @@ namespace Microsoft.Build.Utilities
         #region Properties
 
         // Provide external access to the dependencyTable
-#if WHIDBEY_VISIBILITY
-        internal
-#else
-        public
-#endif
-        IDictionary<string, DateTime> DependencyTable
+        internal IDictionary<string, DateTime> DependencyTable
         {
             get { return _dependencyTable; }
         }
@@ -216,7 +216,6 @@ namespace Microsoft.Build.Utilities
         /// Constructor
         /// </summary>
         /// <param name="tlogFiles">The .write. tlog files to interpret</param>
-        /// <param name="skipMissingFiles">Ignore files that do not exist on disk</param>
         /// <param name="missingFileTimeUtc">The DateTime that should be recorded for missing file.</param>
         public FlatTrackingData(ITaskItem[] tlogFiles, DateTime missingFileTimeUtc)
         {
@@ -227,7 +226,7 @@ namespace Microsoft.Build.Utilities
         /// Constructor
         /// </summary>
         /// <param name="tlogFiles">The .write. tlog files to interpret</param>
-        /// <param name="skipMissingFiles">Ignore files that do not exist on disk</param>
+        /// <param name="tlogFilesToIgnore">The .tlog files to ignore</param>
         /// <param name="missingFileTimeUtc">The DateTime that should be recorded for missing file.</param>
         public FlatTrackingData(ITaskItem[] tlogFiles, ITaskItem[] tlogFilesToIgnore, DateTime missingFileTimeUtc)
         {
@@ -252,13 +251,34 @@ namespace Microsoft.Build.Utilities
             InternalConstruct(null, tlogFiles, tlogFilesToIgnore, false, missingFileTimeUtc, excludedInputPaths);
         }
 
+        /// <summary>
+        /// Constructor
+        /// </summary>
+        /// <param name="tlogFiles">The .tlog files to interpret</param>
+        /// <param name="tlogFilesToIgnore">The .tlog files to ignore</param>
+        /// <param name="missingFileTimeUtc">The DateTime that should be recorded for missing file.</param>
+        /// <param name="excludedInputPaths">The set of paths that contain files that are to be ignored during up to date check, including any subdirectories.</param>
+        /// <param name="sharedLastWriteTimeUtcCache">Cache to be used for all timestamp/exists comparisons, which can be shared between multiple FlatTrackingData instances.</param>
+        /// <param name="treatRootMarkersAsEntries">Add root markers as inputs.</param>
+        public FlatTrackingData(ITaskItem[] tlogFiles, ITaskItem[] tlogFilesToIgnore, DateTime missingFileTimeUtc, string[] excludedInputPaths, IDictionary<string, DateTime> sharedLastWriteTimeUtcCache, bool treatRootMarkersAsEntries)
+        {
+            _treatRootMarkersAsEntries = treatRootMarkersAsEntries;
+
+            if (sharedLastWriteTimeUtcCache != null)
+            {
+                _lastWriteTimeUtcCache = sharedLastWriteTimeUtcCache;
+            }
+
+            InternalConstruct(null, tlogFiles, tlogFilesToIgnore, false, missingFileTimeUtc, excludedInputPaths);
+        }
+
+
 
         /// <summary>
         /// Constructor
         /// </summary>
         /// <param name="ownerTask">The task that is using file tracker</param>
         /// <param name="tlogFiles">The tlog files to interpret</param>
-        /// <param name="skipMissingFiles">Ignore files that do not exist on disk</param>
         /// <param name="missingFileTimeUtc">The DateTime that should be recorded for missing file.</param>
         public FlatTrackingData(ITask ownerTask, ITaskItem[] tlogFiles, DateTime missingFileTimeUtc)
         {
@@ -290,8 +310,10 @@ namespace Microsoft.Build.Utilities
         /// Internal constructor
         /// </summary>
         /// <param name="ownerTask">The task that is using file tracker</param>
-        /// <param name="tlogFiles">The .write. tlog files to interpret</param>
+        /// <param name="tlogFilesLocal">The local .tlog files.</param>
+        /// <param name="tlogFilesToIgnore">The .tlog files to ignore</param>
         /// <param name="skipMissingFiles">Ignore files that do not exist on disk</param>
+        /// <param name="missingFileTimeUtc">The DateTime that should be recorded for missing file.</param>
         /// <param name="excludedInputPaths">The set of paths that contain files that are to be ignored during up to date check</param>
         private void InternalConstruct(ITask ownerTask, ITaskItem[] tlogFilesLocal, ITaskItem[] tlogFilesToIgnore, bool skipMissingFiles, DateTime missingFileTimeUtc, string[] excludedInputPaths)
         {
@@ -442,7 +464,7 @@ namespace Microsoft.Build.Utilities
                 {
                     FileTracker.LogMessage(_log, MessageImportance.Low, "\t{0}", tlogFileName.ItemSpec);
 
-                    DateTime tlogLastWriteTimeUtc = NativeMethods.GetLastWriteTimeUtc(tlogFileName.ItemSpec);
+                    DateTime tlogLastWriteTimeUtc = NativeMethodsShared.GetLastWriteFileUtcTime(tlogFileName.ItemSpec);
                     if (tlogLastWriteTimeUtc > _newestTLogTimeUtc)
                     {
                         _newestTLogTimeUtc = tlogLastWriteTimeUtc;
@@ -467,7 +489,7 @@ namespace Microsoft.Build.Utilities
                                 tlogEntry = tlog.ReadLine();
                                 continue;
                             }
-                            else if (tlogEntry[0] == '^' && TreatRootMarkersAsEntries) // This is a rooting record, and we should keep it
+                            else if (tlogEntry[0] == '^' && TreatRootMarkersAsEntries && tlogEntry.IndexOf('|') < 0) // This is a rooting non composite record, and we should keep it
                             {
                                 tlogEntry = tlogEntry.Substring(1);
 
@@ -497,13 +519,8 @@ namespace Microsoft.Build.Utilities
                         }
                     }
                 }
-                catch (Exception e)
+                catch (Exception e) when (ExceptionHandling.IsIoRelatedException(e))
                 {
-                    if (ExceptionHandling.NotExpectedException(e))
-                    {
-                        throw;
-                    }
-
                     FileTracker.LogWarningWithCodeFromResources(_log, "Tracking_RebuildingDueToInvalidTLog", e.Message);
                     break;
                 }
@@ -555,7 +572,7 @@ namespace Microsoft.Build.Utilities
             // First update the details of our Tlogs
             foreach (ITaskItem tlogFileName in _tlogFiles)
             {
-                DateTime tlogLastWriteTimeUtc = NativeMethods.GetLastWriteTimeUtc(tlogFileName.ItemSpec);
+                DateTime tlogLastWriteTimeUtc = NativeMethodsShared.GetLastWriteFileUtcTime(tlogFileName.ItemSpec);
                 if (tlogLastWriteTimeUtc > _newestTLogTimeUtc)
                 {
                     _newestTLogTimeUtc = tlogLastWriteTimeUtc;
@@ -596,7 +613,6 @@ namespace Microsoft.Build.Utilities
         /// <summary>
         /// Record the time and missing state of the entry in the tlog
         /// </summary>
-        /// <param name="tlogEntry"></param>
         private void RecordEntryDetails(string tlogEntry, bool populateTable)
         {
             if (FileIsExcludedFromDependencyCheck(tlogEntry))
@@ -675,11 +691,11 @@ namespace Microsoft.Build.Utilities
                 // empty all tlogs
                 foreach (ITaskItem tlogFile in _tlogFiles)
                 {
-                    File.WriteAllText(tlogFile.ItemSpec, "", System.Text.Encoding.Unicode);
+                    File.WriteAllText(tlogFile.ItemSpec, "", Encoding.Unicode);
                 }
 
                 // Write out the dependency information as a new tlog
-                using (StreamWriter newTlog = new StreamWriter(firstTlog, false, System.Text.Encoding.Unicode))
+                using (StreamWriter newTlog = FileUtilities.OpenWrite(firstTlog, false, Encoding.Unicode))
                 {
                     foreach (string fileEntry in _dependencyTable.Keys)
                     {
@@ -715,7 +731,7 @@ namespace Microsoft.Build.Utilities
             DateTime fileModifiedTimeUtc = DateTime.MinValue;
             if (!_lastWriteTimeUtcCache.TryGetValue(file, out fileModifiedTimeUtc))
             {
-                fileModifiedTimeUtc = NativeMethods.GetLastWriteTimeUtc(file);
+                fileModifiedTimeUtc = NativeMethodsShared.GetLastWriteFileUtcTime(file);
                 _lastWriteTimeUtcCache[file] = fileModifiedTimeUtc;
             }
 
@@ -732,7 +748,7 @@ namespace Microsoft.Build.Utilities
         /// Note: If things are not up to date, then the TLogs are compacted to remove all entries in preparation to
         /// re-track execution of work.
         /// </summary>
-        /// <param name="Log">TaskLoggingHelper from the host task</param>
+        /// <param name="hostTask">The <see cref="Task"/> host</param>
         /// <param name="upToDateCheckType">UpToDateCheckType</param>
         /// <param name="readTLogNames">The array of read tlogs</param>
         /// <param name="writeTLogNames">The array of write tlogs</param>
@@ -748,7 +764,7 @@ namespace Microsoft.Build.Utilities
             FlatTrackingData outputs = new FlatTrackingData(hostTask, writeTLogNames, DateTime.MinValue);
 
             // Find out if we are up to date
-            isUpToDate = FlatTrackingData.IsUpToDate(hostTask.Log, upToDateCheckType, inputs, outputs);
+            isUpToDate = IsUpToDate(hostTask.Log, upToDateCheckType, inputs, outputs);
 
             // We're going to execute, so clear out the tlogs so
             // the new execution will correctly populate the tlogs a-new
@@ -959,15 +975,21 @@ namespace Microsoft.Build.Utilities
     /// <summary>
     /// The possible types of up to date check that we can support
     /// </summary>
-#if WHIDBEY_VISIBILITY
-    internal
-#else
-    public
-#endif
-    enum UpToDateCheckType
+    public enum UpToDateCheckType
     {
+        /// <summary>
+        /// The input is newer than the output.
+        /// </summary>
         InputNewerThanOutput,
+        /// <summary>
+        /// The input or output are newer than the tracking file.
+        /// </summary>
         InputOrOutputNewerThanTracking,
+        /// <summary>
+        /// The input is newer than the tracking file.
+        /// </summary>
         InputNewerThanTracking
     }
 }
+
+#endif

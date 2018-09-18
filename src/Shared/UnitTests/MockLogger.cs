@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
@@ -6,14 +6,16 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using System.Reflection;
 using System.Resources;
 using System.Text;
 using System.Xml;
 
 using Microsoft.Build.Framework;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 using ProjectCollection = Microsoft.Build.Evaluation.ProjectCollection;
+using Xunit;
+using Xunit.Abstractions;
 
 
 namespace Microsoft.Build.UnitTests
@@ -28,39 +30,15 @@ namespace Microsoft.Build.UnitTests
     internal sealed class MockLogger : ILogger
     {
         #region Properties
-        private int _errorCount = 0;
-        private int _warningCount = 0;
+
         private StringBuilder _fullLog = new StringBuilder();
-        private List<BuildErrorEventArgs> _errors = new List<BuildErrorEventArgs>();
-        private List<BuildWarningEventArgs> _warnings = new List<BuildWarningEventArgs>();
-        private List<ExternalProjectStartedEventArgs> _externalProjectStartedEvents = new List<ExternalProjectStartedEventArgs>();
-        private List<ExternalProjectFinishedEventArgs> _externalProjectFinishedEvents = new List<ExternalProjectFinishedEventArgs>();
-        private bool _logBuildFinishedEvent = true;
-        private List<ProjectStartedEventArgs> _projectStartedEvents = new List<ProjectStartedEventArgs>();
-        private List<ProjectFinishedEventArgs> _projectFinishedEvents = new List<ProjectFinishedEventArgs>();
-        private List<TargetStartedEventArgs> _targetStartedEvents = new List<TargetStartedEventArgs>();
-        private List<TargetFinishedEventArgs> _targetFinishedEvents = new List<TargetFinishedEventArgs>();
-        private List<TaskStartedEventArgs> _taskStartedEvents = new List<TaskStartedEventArgs>();
-        private List<TaskFinishedEventArgs> _taskFinishedEvents = new List<TaskFinishedEventArgs>();
-        private List<BuildMessageEventArgs> _buildMessageEvents = new List<BuildMessageEventArgs>();
-        private List<BuildStartedEventArgs> _buildStartedEvents = new List<BuildStartedEventArgs>();
-        private List<BuildFinishedEventArgs> _buildFinishedEvents = new List<BuildFinishedEventArgs>();
+        private ITestOutputHelper _testOutputHelper;
 
         /// <summary>
         /// Should the build finished event be logged in the log file. This is to work around the fact we have different
         /// localized strings between env and xmake for the build finished event.
         /// </summary>
-        internal bool LogBuildFinished
-        {
-            get
-            {
-                return _logBuildFinishedEvent;
-            }
-            set
-            {
-                _logBuildFinishedEvent = value;
-            }
-        }
+        internal bool LogBuildFinished { get; set; } = true;
 
         /*
          * Method:  ErrorCount
@@ -68,10 +46,7 @@ namespace Microsoft.Build.UnitTests
          * The count of all errors seen so far.
          *
          */
-        internal int ErrorCount
-        {
-            get { return _errorCount; }
-        }
+        internal int ErrorCount { get; private set; } = 0;
 
         /*
          * Method:  WarningCount
@@ -79,32 +54,17 @@ namespace Microsoft.Build.UnitTests
          * The count of all warnings seen so far.
          *
          */
-        internal int WarningCount
-        {
-            get { return _warningCount; }
-        }
+        internal int WarningCount { get; private set; } = 0;
 
         /// <summary>
         /// Return the list of logged errors
         /// </summary>
-        internal List<BuildErrorEventArgs> Errors
-        {
-            get
-            {
-                return _errors;
-            }
-        }
+        internal List<BuildErrorEventArgs> Errors { get; } = new List<BuildErrorEventArgs>();
 
         /// <summary>
         /// Returns the list of logged warnings
         /// </summary>
-        internal List<BuildWarningEventArgs> Warnings
-        {
-            get
-            {
-                return _warnings;
-            }
-        }
+        internal List<BuildWarningEventArgs> Warnings { get; } = new List<BuildWarningEventArgs>();
 
         /// <summary>
         /// When set to true, allows task crashes to be logged without causing an assert.
@@ -118,90 +78,59 @@ namespace Microsoft.Build.UnitTests
         /// <summary>
         /// List of ExternalProjectStarted events
         /// </summary>
-        internal List<ExternalProjectStartedEventArgs> ExternalProjectStartedEvents
-        {
-            get { return _externalProjectStartedEvents; }
-        }
+        internal List<ExternalProjectStartedEventArgs> ExternalProjectStartedEvents { get; } = new List<ExternalProjectStartedEventArgs>();
 
         /// <summary>
         /// List of ExternalProjectFinished events
         /// </summary>
-        internal List<ExternalProjectFinishedEventArgs> ExternalProjectFinishedEvents
-        {
-            get { return _externalProjectFinishedEvents; }
-        }
+        internal List<ExternalProjectFinishedEventArgs> ExternalProjectFinishedEvents { get; } = new List<ExternalProjectFinishedEventArgs>();
 
         /// <summary>
         /// List of ProjectStarted events
         /// </summary>
-        internal List<ProjectStartedEventArgs> ProjectStartedEvents
-        {
-            get { return _projectStartedEvents; }
-        }
+        internal List<ProjectStartedEventArgs> ProjectStartedEvents { get; } = new List<ProjectStartedEventArgs>();
 
         /// <summary>
         /// List of ProjectFinished events
         /// </summary>
-        internal List<ProjectFinishedEventArgs> ProjectFinishedEvents
-        {
-            get { return _projectFinishedEvents; }
-        }
+        internal List<ProjectFinishedEventArgs> ProjectFinishedEvents { get; } = new List<ProjectFinishedEventArgs>();
 
         /// <summary>
         /// List of TargetStarted events
         /// </summary>
-        internal List<TargetStartedEventArgs> TargetStartedEvents
-        {
-            get { return _targetStartedEvents; }
-        }
+        internal List<TargetStartedEventArgs> TargetStartedEvents { get; } = new List<TargetStartedEventArgs>();
 
         /// <summary>
         /// List of TargetFinished events
         /// </summary>
-        internal List<TargetFinishedEventArgs> TargetFinishedEvents
-        {
-            get { return _targetFinishedEvents; }
-        }
+        internal List<TargetFinishedEventArgs> TargetFinishedEvents { get; } = new List<TargetFinishedEventArgs>();
 
         /// <summary>
         /// List of TaskStarted events
         /// </summary>
-        internal List<TaskStartedEventArgs> TaskStartedEvents
-        {
-            get { return _taskStartedEvents; }
-        }
+        internal List<TaskStartedEventArgs> TaskStartedEvents { get; } = new List<TaskStartedEventArgs>();
 
         /// <summary>
         /// List of TaskFinished events
         /// </summary>
-        internal List<TaskFinishedEventArgs> TaskFinishedEvents
-        {
-            get { return _taskFinishedEvents; }
-        }
+        internal List<TaskFinishedEventArgs> TaskFinishedEvents { get; } = new List<TaskFinishedEventArgs>();
 
         /// <summary>
         /// List of BuildMessage events
         /// </summary>
-        internal List<BuildMessageEventArgs> BuildMessageEvents
-        {
-            get { return _buildMessageEvents; }
-        }
+        internal List<BuildMessageEventArgs> BuildMessageEvents { get; } = new List<BuildMessageEventArgs>();
 
         /// <summary>
         /// List of BuildStarted events, thought we expect there to only be one, a valid check is to make sure this list is length 1
         /// </summary>
-        internal List<BuildStartedEventArgs> BuildStartedEvents
-        {
-            get { return _buildStartedEvents; }
-        }
+        internal List<BuildStartedEventArgs> BuildStartedEvents { get; } = new List<BuildStartedEventArgs>();
 
         /// <summary>
         /// List of BuildFinished events, thought we expect there to only be one, a valid check is to make sure this list is length 1
         /// </summary>
-        internal List<BuildFinishedEventArgs> BuildFinishedEvents
-        {
-            get { return _buildFinishedEvents; }
-        }
+        internal List<BuildFinishedEventArgs> BuildFinishedEvents { get; } = new List<BuildFinishedEventArgs>();
+
+        internal List<BuildEventArgs> AllBuildEvents { get; } = new List<BuildEventArgs>();
 
         /*
          * Method:  FullLog
@@ -256,8 +185,7 @@ namespace Microsoft.Build.UnitTests
          */
         public void Initialize(IEventSource eventSource)
         {
-            eventSource.AnyEventRaised +=
-                    new AnyEventHandler(LoggerEventHandler);
+            eventSource.AnyEventRaised += LoggerEventHandler;
         }
 
         /// <summary>
@@ -280,6 +208,18 @@ namespace Microsoft.Build.UnitTests
         }
         #endregion
 
+        public MockLogger()
+        {
+            _testOutputHelper = null;
+        }
+
+        public MockLogger(ITestOutputHelper testOutputHelper)
+        {
+            _testOutputHelper = testOutputHelper;
+        }
+
+        public List<Action<object, BuildEventArgs>> AdditionalHandlers { get; set; } = new List<Action<object, BuildEventArgs>>();
+
         /*
          * Method:  LoggerEventHandler
          *
@@ -288,15 +228,22 @@ namespace Microsoft.Build.UnitTests
          */
         internal void LoggerEventHandler(object sender, BuildEventArgs eventArgs)
         {
+            AllBuildEvents.Add(eventArgs);
+
+            foreach (var handler in AdditionalHandlers)
+            {
+                handler(sender, eventArgs);
+            }
+
             if (eventArgs is BuildWarningEventArgs)
             {
-                BuildWarningEventArgs w = (BuildWarningEventArgs)eventArgs;
+                BuildWarningEventArgs w = (BuildWarningEventArgs) eventArgs;
 
                 // hack: disregard the MTA warning.
                 // need the second condition to pass on ploc builds
                 if (w.Code != "MSB4056" && !w.Message.Contains("MSB4056"))
                 {
-                    _fullLog.AppendFormat("{0}({1},{2}): {3} warning {4}: {5}\r\n",
+                    string logMessage = string.Format("{0}({1},{2}): {3} warning {4}: {5}",
                         w.File,
                         w.LineNumber,
                         w.ColumnNumber,
@@ -304,33 +251,39 @@ namespace Microsoft.Build.UnitTests
                         w.Code,
                         w.Message);
 
-                    ++_warningCount;
-                    _warnings.Add(w);
+                    _fullLog.AppendLine(logMessage);
+                    _testOutputHelper?.WriteLine(logMessage);
+
+                    ++WarningCount;
+                    Warnings.Add(w);
                 }
             }
             else if (eventArgs is BuildErrorEventArgs)
             {
-                BuildErrorEventArgs e = (BuildErrorEventArgs)eventArgs;
+                BuildErrorEventArgs e = (BuildErrorEventArgs) eventArgs;
 
-                _fullLog.AppendFormat("{0}({1},{2}): {3} error {4}: {5}\r\n",
+                string logMessage = string.Format("{0}({1},{2}): {3} error {4}: {5}",
                     e.File,
                     e.LineNumber,
                     e.ColumnNumber,
                     e.Subcategory,
                     e.Code,
                     e.Message);
+                _fullLog.AppendLine(logMessage);
+                _testOutputHelper?.WriteLine(logMessage);
 
-                ++_errorCount;
-                _errors.Add(e);
+                ++ErrorCount;
+                Errors.Add(e);
             }
             else
             {
                 // Log the message unless we are a build finished event and logBuildFinished is set to false.
-                bool logMessage = !(eventArgs is BuildFinishedEventArgs) || (eventArgs is BuildFinishedEventArgs && _logBuildFinishedEvent);
+                bool logMessage = !(eventArgs is BuildFinishedEventArgs) ||
+                                  (eventArgs is BuildFinishedEventArgs && LogBuildFinished);
                 if (logMessage)
                 {
-                    _fullLog.Append(eventArgs.Message);
-                    _fullLog.Append("\r\n");
+                    _fullLog.AppendLine(eventArgs.Message);
+                    _testOutputHelper?.WriteLine(eventArgs.Message);
                 }
             }
 
@@ -403,7 +356,7 @@ namespace Microsoft.Build.UnitTests
             {
                 if (s_engineResourceManager == null)
                 {
-                    s_engineResourceManager = new ResourceManager("Microsoft.Build.Resources.Strings", typeof(ProjectCollection).Assembly);
+                     s_engineResourceManager = new ResourceManager("Microsoft.Build.Strings", typeof(ProjectCollection).GetTypeInfo().Assembly);
                 }
 
                 return s_engineResourceManager;
@@ -458,15 +411,22 @@ namespace Microsoft.Build.UnitTests
                 }
 
                 currentLine = reader.ReadLine();
-                if (!isCaseSensitive)
+                if (!isCaseSensitive && currentLine != null)
                 {
                     currentLine = currentLine.ToUpper();
                 }
             }
             if (index != contains.Length)
             {
-                Console.WriteLine(FullLog);
-                Assert.Fail(String.Format(CultureInfo.CurrentCulture, "Log was expected to contain '{0}', but did not.\n=======\n{1}\n=======", contains[index], FullLog));
+                if (_testOutputHelper != null)
+                {
+                    _testOutputHelper.WriteLine(FullLog);
+                }
+                else
+                {
+                    Console.WriteLine(FullLog);
+                }
+                Assert.True(false, String.Format(CultureInfo.CurrentCulture, "Log was expected to contain '{0}', but did not.\n=======\n{1}\n=======", contains[index], FullLog));
             }
         }
 
@@ -478,8 +438,15 @@ namespace Microsoft.Build.UnitTests
         {
             if (FullLog.Contains(contains))
             {
-                Console.WriteLine(FullLog);
-                Assert.Fail(String.Format("Log was not expected to contain '{0}', but did.", contains));
+                if (_testOutputHelper != null)
+                {
+                    _testOutputHelper.WriteLine(FullLog);
+                }
+                else
+                {
+                    Console.WriteLine(FullLog);
+                }
+                Assert.True(false, String.Format("Log was not expected to contain '{0}', but did.", contains));
             }
         }
 
@@ -488,7 +455,7 @@ namespace Microsoft.Build.UnitTests
         /// </summary>
         internal void AssertNoErrors()
         {
-            Assert.AreEqual(0, _errorCount);
+            Assert.Equal(0, ErrorCount);
         }
 
         /// <summary>
@@ -496,7 +463,7 @@ namespace Microsoft.Build.UnitTests
         /// </summary>
         internal void AssertNoWarnings()
         {
-            Assert.AreEqual(0, _warningCount);
+            Assert.Equal(0, WarningCount);
         }
     }
 }

@@ -8,7 +8,9 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Security;
+#if FEATURE_SECURITY_PERMISSIONS
 using System.Security.Permissions;
+#endif
 
 using Microsoft.Build.Framework;
 using Microsoft.Build.Shared;
@@ -27,7 +29,11 @@ namespace Microsoft.Build.Utilities
     /// <comment>
     /// Surprisingly few of these Utilities TaskItems are created: typically several orders of magnitude fewer than the number of engine TaskItems.
     /// </comment>
-    public sealed class TaskItem : MarshalByRefObject, ITaskItem, ITaskItem2
+    public sealed class TaskItem :
+#if FEATURE_APPDOMAIN
+        MarshalByRefObject,
+#endif
+        ITaskItem, ITaskItem2
     {
         #region Member Data
 
@@ -73,7 +79,7 @@ namespace Microsoft.Build.Utilities
         {
             ErrorUtilities.VerifyThrowArgumentNull(itemSpec, "itemSpec");
 
-            _itemSpec = itemSpec;
+            _itemSpec = FileUtilities.FixFilePath(itemSpec);
         }
 
         /// <summary>
@@ -162,7 +168,7 @@ namespace Microsoft.Build.Utilities
             {
                 ErrorUtilities.VerifyThrowArgumentNull(value, "ItemSpec");
 
-                _itemSpec = value;
+                _itemSpec = FileUtilities.FixFilePath(value);
                 _fullPath = null;
             }
         }
@@ -184,7 +190,7 @@ namespace Microsoft.Build.Utilities
 
             set
             {
-                _itemSpec = value;
+                _itemSpec = FileUtilities.FixFilePath(value);
                 _fullPath = null;
             }
         }
@@ -197,7 +203,7 @@ namespace Microsoft.Build.Utilities
         {
             get
             {
-                List<string> metadataNames = new List<string>((_metadata == null) ? ReadOnlyEmptyList<string>.Instance : _metadata.Keys);
+                List<string> metadataNames = new List<string>(_metadata?.Keys ?? Array.Empty<string>());
                 metadataNames.AddRange(FileUtilities.ItemSpecModifiers.All);
 
                 return metadataNames;
@@ -407,6 +413,7 @@ namespace Microsoft.Build.Utilities
             return _itemSpec;
         }
 
+#if FEATURE_APPDOMAIN
         /// <summary>
         /// Overridden to give this class infinite lease time. Otherwise we end up with a limited
         /// lease (5 minutes I think) and instances can expire if they take long time processing.
@@ -417,6 +424,7 @@ namespace Microsoft.Build.Utilities
             // null means infinite lease time
             return null;
         }
+#endif
 
         #endregion
 

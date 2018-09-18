@@ -1,19 +1,14 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Text;
-using System.Text.RegularExpressions;
 using System.Xml;
-
-
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 using Microsoft.Build.Construction;
 using Microsoft.Build.Evaluation;
@@ -21,6 +16,15 @@ using Microsoft.Build.Execution;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Logging;
 using Microsoft.Build.Shared;
+using Microsoft.Build.UnitTests;
+using Xunit;
+using Xunit.Abstractions;
+
+// Microsoft.Build.Tasks has MSBuildConstants compiled into it under a different namespace otherwise
+// there are collisions with the one compiled into Microsoft.Build.Framework
+#if MICROSOFT_BUILD_TASKS_UNITTESTS
+using MSBuildConstants = Microsoft.Build.Tasks.MSBuildConstants;
+#endif
 
 namespace Microsoft.Build.UnitTests
 {
@@ -30,43 +34,43 @@ namespace Microsoft.Build.UnitTests
      * Utility methods for unit tests that work through the object model.
      *
      */
-    public static class ObjectModelHelpers
+    internal static class ObjectModelHelpers
     {
         private const string msbuildNamespace = "http://schemas.microsoft.com/developer/msbuild/2003";
-        private const string msbuildDefaultToolsVersion = MSBuildConstants.CurrentToolsVersion;
-        private const string msbuildAssemblyVersion = MSBuildConstants.CurrentAssemblyVersion;
-        private const string currentVisualStudioVersion = MSBuildConstants.CurrentVisualStudioVersion;
+        private static string s_msbuildDefaultToolsVersion = MSBuildConstants.CurrentToolsVersion;
+        private static string s_msbuildAssemblyVersion = MSBuildConstants.CurrentAssemblyVersion;
+        private static string s_currentVisualStudioVersion = MSBuildConstants.CurrentVisualStudioVersion;
 
         /// <summary>
-        /// Return the the current Visual Studio version
+        /// Return the current Visual Studio version
         /// </summary>
         internal static string CurrentVisualStudioVersion
         {
             get
             {
-                return currentVisualStudioVersion;
+                return s_currentVisualStudioVersion;
             }
         }
 
         /// <summary>
-        /// Return the default tools version 
+        /// Return the default tools version
         /// </summary>
         internal static string MSBuildDefaultToolsVersion
         {
             get
             {
-                return msbuildDefaultToolsVersion;
+                return s_msbuildDefaultToolsVersion;
             }
         }
 
         /// <summary>
-        /// Return the current assembly version 
+        /// Return the current assembly version
         /// </summary>
         internal static string MSBuildAssemblyVersion
         {
             get
             {
-                return msbuildAssemblyVersion;
+                return s_msbuildAssemblyVersion;
             }
         }
 
@@ -92,8 +96,6 @@ namespace Microsoft.Build.UnitTests
             return s_builtInMetadataNames.Contains(metadataName);
         }
 
-        internal delegate void MethodUnderTest();
-
         /// <summary>
         /// Gets an item list from the project and assert that it contains
         /// exactly one item with the supplied name.
@@ -104,52 +106,175 @@ namespace Microsoft.Build.UnitTests
             int count = 0;
             foreach (ProjectItem item in items)
             {
-                Assert.AreEqual(itemInclude.ToUpperInvariant(), item.EvaluatedInclude.ToUpperInvariant());
+                Assert.Equal(itemInclude.ToUpperInvariant(), item.EvaluatedInclude.ToUpperInvariant());
                 ++count;
             }
 
-            Assert.AreEqual(1, count);
+            Assert.Equal(1, count);
 
             return items[0];
         }
 
-        /// <summary>
-        /// Helper that asserts if an exception of type specified is 
-        /// not thrown when calling specified method
-        /// </summary>
-        /// <example>
-        /// AssertThrows(typeof(InvalidOperationException), delegate { object o = ((IEnumerator)enumerator).Current; });
-        /// </example>
-        internal static void AssertThrows(Type exception, MethodUnderTest method)
+        internal static void AssertItemEvaluationFromProject(string projectContents, string[] inputFiles, string[] expectedInclude, Dictionary<string, string>[] expectedMetadataPerItem = null, bool normalizeSlashes = false, bool makeExpectedIncludeAbsolute = false)
         {
-            try
-            {
-                method();
-            }
-            catch (Exception ex)
-            {
-                if (ex.GetType() == exception)
+            AssertItemEvaluationFromGenericItemEvaluator((p, c) =>
                 {
-                    return;
+                    return new Project(p, new Dictionary<string, string>(), MSBuildConstants.CurrentToolsVersion, c)
+                        .Items
+                        .Select(i => (TestItem) new ProjectItemTestItemAdapter(i))
+                        .ToList();
+                },
+            projectContents,
+            inputFiles,
+            expectedInclude,
+            makeExpectedIncludeAbsolute,
+            expectedMetadataPerItem,
+            normalizeSlashes);
+        }
+
+        internal static void AssertItemEvaluationFromGenericItemEvaluator(Func<string, ProjectCollection, IList<TestItem>> itemEvaluator, string projectContents, string[] inputFiles, string[] expectedInclude, bool makeExpectedIncludeAbsolute = false, Dictionary<string, string>[] expectedMetadataPerItem = null, bool normalizeSlashes = false)
+        {
+            using (var env = TestEnvironment.Create())
+            using (var collection = new ProjectCollection())
+            {
+                var testProject = env.CreateTestProjectWithFiles(projectContents, inputFiles);
+                var evaluatedItems = itemEvaluator(testProject.ProjectFile, collection);
+
+                if (makeExpectedIncludeAbsolute)
+                {
+                    expectedInclude = expectedInclude.Select(i => Path.Combine(testProject.TestRoot, i)).ToArray();
+                }
+
+                if (expectedMetadataPerItem == null)
+                {
+                    AssertItems(expectedInclude, evaluatedItems, expectedDirectMetadata: null, normalizeSlashes: normalizeSlashes);
+                }
+                else
+                {
+                    AssertItems(expectedInclude, evaluatedItems, expectedMetadataPerItem, normalizeSlashes);
                 }
             }
-            Assert.Fail("Didn't throw " + exception.ToString());
+        }
+
+        internal static string NormalizeSlashes(string path)
+        {
+            return path.Replace('/', Path.DirectorySeparatorChar).Replace('\\', Path.DirectorySeparatorChar);
+        }
+
+        // todo Make IItem<M> public and add these new members to it.
+        internal interface TestItem
+        {
+            string EvaluatedInclude { get; }
+            int DirectMetadataCount { get; }
+            string GetMetadataValue(string key);
+        }
+
+        internal class ProjectItemTestItemAdapter : TestItem
+        {
+            private readonly ProjectItem _projectInstance;
+
+            public ProjectItemTestItemAdapter(ProjectItem projectInstance)
+            {
+                _projectInstance = projectInstance;
+            }
+
+            public string EvaluatedInclude => _projectInstance.EvaluatedInclude;
+            public int DirectMetadataCount => _projectInstance.DirectMetadataCount;
+            public string GetMetadataValue(string key) => _projectInstance.GetMetadataValue(key);
+
+            public static implicit operator ProjectItemTestItemAdapter(ProjectItem pi)
+            {
+                return new ProjectItemTestItemAdapter(pi);
+            }
+        }
+
+        internal class ProjectItemInstanceTestItemAdapter : TestItem
+        {
+            private readonly ProjectItemInstance _projectInstance;
+
+            public ProjectItemInstanceTestItemAdapter(ProjectItemInstance projectInstance)
+            {
+                _projectInstance = projectInstance;
+            }
+
+            public string EvaluatedInclude => _projectInstance.EvaluatedInclude;
+            public int DirectMetadataCount => _projectInstance.DirectMetadataCount;
+            public string GetMetadataValue(string key) => _projectInstance.GetMetadataValue(key);
+
+            public static implicit operator ProjectItemInstanceTestItemAdapter(ProjectItemInstance pi)
+            {
+                return new ProjectItemInstanceTestItemAdapter(pi);
+            }
+        }
+
+        internal static void AssertItems(string[] expectedItems, IList<ProjectItem> items, Dictionary<string, string> expectedDirectMetadata = null, bool normalizeSlashes = false)
+        {
+            var converteditems = items.Select(i => (TestItem) new ProjectItemTestItemAdapter(i)).ToList();
+            AssertItems(expectedItems, converteditems, expectedDirectMetadata, normalizeSlashes);
         }
 
         /// <summary>
-        /// Amazingly sophisticated :) helper function to determine if the set of ITaskItems returned from 
+        /// Asserts that the list of items has the specified evaluated includes.
+        /// </summary>
+        internal static void AssertItems(string[] expectedItems, IList<TestItem> items, Dictionary<string, string> expectedDirectMetadata = null, bool normalizeSlashes = false)
+        {
+            if (expectedDirectMetadata == null)
+            {
+                expectedDirectMetadata = new Dictionary<string, string>();
+            }
+
+            // all items have the same metadata
+            var metadata = new Dictionary<string, string>[expectedItems.Length];
+
+            for (var i = 0; i < metadata.Length; i++)
+            {
+                metadata[i] = expectedDirectMetadata;
+            }
+
+            AssertItems(expectedItems, items, metadata, normalizeSlashes);
+        }
+
+        public static void AssertItems(string[] expectedItems, IList<ProjectItem> items, Dictionary<string, string>[] expectedDirectMetadataPerItem, bool normalizeSlashes = false)
+        {
+            var convertedItems = items.Select(i => (TestItem) new ProjectItemTestItemAdapter(i)).ToList();
+            AssertItems(expectedItems, convertedItems, expectedDirectMetadataPerItem, normalizeSlashes);
+        }
+
+        public static void AssertItems(string[] expectedItems, IList<TestItem> items, Dictionary<string, string>[] expectedDirectMetadataPerItem, bool normalizeSlashes = false)
+        {
+            Assert.Equal(expectedItems.Length, items.Count);
+
+            Assert.Equal(expectedItems.Length, expectedDirectMetadataPerItem.Length);
+
+            for (int i = 0; i < expectedItems.Length; i++)
+            {
+                if (!normalizeSlashes)
+                {
+                    Assert.Equal(expectedItems[i], items[i].EvaluatedInclude);
+                }
+                else
+                {
+                    Assert.Equal(NormalizeSlashes(expectedItems[i]), items[i].EvaluatedInclude);
+                }
+
+                AssertItemHasMetadata(expectedDirectMetadataPerItem[i], items[i]);
+            }
+        }
+
+        /// <summary>
+        /// Amazingly sophisticated :) helper function to determine if the set of ITaskItems returned from
         /// a task match the expected set of ITaskItems.  It can also check that the ITaskItems have the expected
         /// metadata, and that the ITaskItems are returned in the correct order.
-        /// 
+        ///
         /// The "expectedItemsString" is a formatted way of easily specifying which items you expect to see.
         /// The format is:
-        /// 
+        ///
         ///         itemspec1 :   metadataname1=metadatavalue1 ; metadataname2=metadatavalue2 ; ...
         ///         itemspec2 :   metadataname3=metadatavalue3 ; metadataname4=metadatavalue4 ; ...
         ///         itemspec3 :   metadataname5=metadatavalue5 ; metadataname6=metadatavalue6 ; ...
-        /// 
+        ///
         /// (Each item needs to be on its own line.)
-        /// 
+        ///
         /// </summary>
         /// <param name="expectedItemsString"></param>
         /// <param name="actualItems"></param>
@@ -159,19 +284,19 @@ namespace Microsoft.Build.UnitTests
         }
 
         /// <summary>
-        /// Amazingly sophisticated :) helper function to determine if the set of ITaskItems returned from 
+        /// Amazingly sophisticated :) helper function to determine if the set of ITaskItems returned from
         /// a task match the expected set of ITaskItems.  It can also check that the ITaskItems have the expected
         /// metadata, and that the ITaskItems are returned in the correct order.
-        /// 
+        ///
         /// The "expectedItemsString" is a formatted way of easily specifying which items you expect to see.
         /// The format is:
-        /// 
+        ///
         ///         itemspec1 :   metadataname1=metadatavalue1 ; metadataname2=metadatavalue2 ; ...
         ///         itemspec2 :   metadataname3=metadatavalue3 ; metadataname4=metadatavalue4 ; ...
         ///         itemspec3 :   metadataname5=metadatavalue5 ; metadataname6=metadatavalue6 ; ...
-        /// 
+        ///
         /// (Each item needs to be on its own line.)
-        /// 
+        ///
         /// </summary>
         /// <param name="expectedItemsString"></param>
         /// <param name="actualItems"></param>
@@ -232,7 +357,7 @@ namespace Microsoft.Build.UnitTests
                     }
                 }
 
-                Assert.IsNotNull(expectedItem, String.Format("Item '{0}' was returned but not expected.", actualItem.ItemSpec));
+                Assert.NotNull(expectedItem); // String.Format("Item '{0}' was returned but not expected.", actualItem.ItemSpec));
 
                 // Make sure all the metadata on the expected item matches the metadata on the actual item.
                 // Don't check built-in metadata ... only check custom metadata.
@@ -244,30 +369,27 @@ namespace Microsoft.Build.UnitTests
                         string expectedMetadataValue = expectedItem.GetMetadata(metadataName);
                         string actualMetadataValue = actualItem.GetMetadata(metadataName);
 
-                        Assert.IsTrue
-                            (
+                        Assert.True(
                                 actualMetadataValue.Length > 0 || expectedMetadataValue.Length == 0,
                                 string.Format("Item '{0}' does not have expected metadata '{1}'.", actualItem.ItemSpec, metadataName)
                             );
 
-                        Assert.IsTrue
-                            (
+                        Assert.True(
                                 actualMetadataValue.Length == 0 || expectedMetadataValue.Length > 0,
                                 string.Format("Item '{0}' has unexpected metadata {1}={2}.", actualItem.ItemSpec, metadataName, actualMetadataValue)
                             );
 
-                        Assert.AreEqual
-                            (
+                        Assert.Equal(
                                 expectedMetadataValue,
-                                actualMetadataValue,
-                                string.Format
-                                    (
-                                        "Item '{0}' has metadata {1}={2} instead of expected {1}={3}.",
-                                        actualItem.ItemSpec,
-                                        metadataName,
-                                        actualMetadataValue,
-                                        expectedMetadataValue
-                                    )
+                                actualMetadataValue
+                            //string.Format
+                            //    (
+                            //        "Item '{0}' has metadata {1}={2} instead of expected {1}={3}.",
+                            //        actualItem.ItemSpec,
+                            //        metadataName,
+                            //        actualMetadataValue,
+                            //        expectedMetadataValue
+                            //    )
                             );
                     }
                 }
@@ -277,7 +399,7 @@ namespace Microsoft.Build.UnitTests
             // Log an error for any leftover items in the expectedItems collection.
             foreach (ITaskItem expectedItem in expectedItems)
             {
-                Assert.Fail(String.Format("Item '{0}' was expected but not returned.", expectedItem.ItemSpec));
+                Assert.True(false, String.Format("Item '{0}' was expected but not returned.", expectedItem.ItemSpec));
             }
 
             if (outOfOrder)
@@ -285,30 +407,45 @@ namespace Microsoft.Build.UnitTests
                 Console.WriteLine("ERROR:  Items were returned in the incorrect order...");
                 Console.WriteLine("Expected:  " + expectedItemSpecs);
                 Console.WriteLine("Actual:    " + actualItemSpecs);
-                Assert.Fail("Items were returned in the incorrect order.  See 'Standard Out' tab for more details.");
+                Assert.True(false, "Items were returned in the incorrect order.  See 'Standard Out' tab for more details.");
+            }
+        }
+
+        internal static void AssertItemHasMetadata(Dictionary<string, string> expected, ProjectItem item)
+        {
+            AssertItemHasMetadata(expected, new ProjectItemTestItemAdapter(item));
+        }
+
+        internal static void AssertItemHasMetadata(Dictionary<string, string> expected, TestItem item)
+        {
+            Assert.Equal(expected.Keys.Count, item.DirectMetadataCount);
+
+            foreach (var key in expected.Keys)
+            {
+                Assert.Equal(expected[key], item.GetMetadataValue(key));
             }
         }
 
         /// <summary>
-        /// Used to compare the contents of two arrays. 
+        /// Used to compare the contents of two arrays.
         /// </summary>
         internal static void AssertArrayContentsMatch(object[] expected, object[] actual)
         {
             if (expected == null)
             {
-                Assert.IsNull(actual, "Expected a null array");
+                Assert.Null(actual); // "Expected a null array"
             }
             else
             {
-                Assert.IsNotNull(actual, "Result should be non-null.");
+                Assert.NotNull(actual); // "Result should be non-null."
             }
 
-            Assert.AreEqual(expected.Length, actual.Length, "Expected array length of <" + expected.Length + "> but was <" + actual.Length + ">.");
+            Assert.Equal(expected.Length, actual.Length); // "Expected array length of <" + expected.Length + "> but was <" + actual.Length + ">.");
 
-            // Now that we've verified they're both non-null and of the same length, compare each item in the array. 
+            // Now that we've verified they're both non-null and of the same length, compare each item in the array.
             for (int i = 0; i < expected.Length; i++)
             {
-                Assert.AreEqual(expected[i], actual[i], "At index " + i + " expected " + expected[i].ToString() + " but was " + actual.ToString());
+                Assert.Equal(expected[i], actual[i]); // "At index " + i + " expected " + expected[i].ToString() + " but was " + actual.ToString());
             }
         }
 
@@ -353,7 +490,7 @@ namespace Microsoft.Build.UnitTests
                             if (itemMetadataPieceTrimmed.Length > 0)
                             {
                                 int indexOfEquals = itemMetadataPieceTrimmed.IndexOf('=');
-                                Assert.IsTrue(indexOfEquals != -1, String.Format("Could not find <equals> in item metadata definition '{0}'", itemMetadataPieceTrimmed));
+                                Assert.NotEqual(-1, indexOfEquals);
 
                                 string itemMetadataName = itemMetadataPieceTrimmed.Substring(0, indexOfEquals).Trim();
                                 string itemMetadataValue = itemMetadataPieceTrimmed.Substring(indexOfEquals + 1).Trim();
@@ -391,17 +528,7 @@ namespace Microsoft.Build.UnitTests
                 message = fileRelativePath + " doesn't exist, but it should.";
             }
 
-            AssertFileExistenceInTempProjectDirectory(fileRelativePath, message, true);
-        }
-
-        /// <summary>
-        /// Assert that a given file exists (or not) within the temp project directory.
-        /// </summary>
-        /// <param name="fileRelativePath"></param>
-        /// <param name="message">Can be null.</param>
-        private static void AssertFileExistenceInTempProjectDirectory(string fileRelativePath, string message, bool exists)
-        {
-            Assert.AreEqual(exists, File.Exists(Path.Combine(TempProjectDir, fileRelativePath)), message);
+            Assert.True(File.Exists(Path.Combine(TempProjectDir, fileRelativePath)), message);
         }
 
         /// <summary>
@@ -418,26 +545,44 @@ namespace Microsoft.Build.UnitTests
 
             // Place the correct MSBuild namespace into the <Project> tag.
             projectFileContents = projectFileContents.Replace("msbuildnamespace", msbuildNamespace);
-            projectFileContents = projectFileContents.Replace("msbuilddefaulttoolsversion", msbuildDefaultToolsVersion);
-            projectFileContents = projectFileContents.Replace("msbuildassemblyversion", msbuildAssemblyVersion);
+            projectFileContents = projectFileContents.Replace("msbuilddefaulttoolsversion", s_msbuildDefaultToolsVersion);
+            projectFileContents = projectFileContents.Replace("msbuildassemblyversion", s_msbuildAssemblyVersion);
 
             return projectFileContents;
         }
 
+        public static string Cleanup(this string aString)
+        {
+            return CleanupFileContents(aString);
+        }
+
         /// <summary>
-        /// Normalizes all the whitespace in an Xml document so that two documents that
+        /// Normalizes all the whitespace in an xml string so that two documents that
         /// differ only in whitespace can be easily compared to each other for sameness.
         /// </summary>
-        /// <param name="xmldoc"></param>
-        /// <returns></returns>
-        static internal string NormalizeXmlWhitespace(XmlDocument xmldoc)
+        internal static string NormalizeXmlWhitespace(string xml)
         {
-            // Normalize all the whitespace by writing the Xml document out to a 
+            XmlDocument xmldoc = new XmlDocument();
+            xmldoc.LoadXml(xml);
+
+            // Normalize all the whitespace by writing the Xml document out to a
             // string, with PreserveWhitespace=false.
             xmldoc.PreserveWhitespace = false;
-            StringWriter stringWriter = new StringWriter();
-            xmldoc.Save(stringWriter);
-            return stringWriter.ToString();
+
+            StringBuilder sb = new StringBuilder(xml.Length);
+            var writerSettings = new XmlWriterSettings
+            {
+                OmitXmlDeclaration = true,
+                Encoding = Encoding.UTF8,
+                Indent = true
+            };
+
+            using (var writer = XmlWriter.Create(sb, writerSettings))
+            {
+                xmldoc.WriteTo(writer);
+            }
+
+            return sb.ToString();
         }
 
         /// <summary>
@@ -462,6 +607,16 @@ namespace Microsoft.Build.UnitTests
             File.WriteAllText(projectFilePath, CleanupFileContents(fileContents));
 
             return projectFilePath;
+        }
+
+        internal static ProjectRootElement CreateInMemoryProjectRootElement(string projectContents, ProjectCollection collection = null, bool preserveFormatting = true)
+        {
+            var cleanedProject = ObjectModelHelpers.CleanupFileContents(projectContents);
+
+            return ProjectRootElement.Create(
+                XmlReader.Create(new StringReader(cleanedProject)),
+                collection ?? new ProjectCollection(),
+                preserveFormatting);
         }
 
         /// <summary>
@@ -510,13 +665,7 @@ namespace Microsoft.Build.UnitTests
             string toolsVersion /* may be null */
             )
         {
-            // Anonymous in-memory projects use the current directory for $(MSBuildProjectDirectory).
-            // We need to set the directory to something reasonable.
-            string originalDir = Directory.GetCurrentDirectory();
-            Directory.SetCurrentDirectory(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData));
-
-            XmlReaderSettings readerSettings = new XmlReaderSettings();
-            readerSettings.DtdProcessing = DtdProcessing.Ignore;
+            XmlReaderSettings readerSettings = new XmlReaderSettings {DtdProcessing = DtdProcessing.Ignore};
 
             Project project = new Project
                 (
@@ -527,7 +676,7 @@ namespace Microsoft.Build.UnitTests
                 );
 
             Guid guid = Guid.NewGuid();
-            project.FullPath = Path.Combine(Path.GetTempPath(), "Temporary" + guid.ToString("N") + ".csproj");
+            project.FullPath = Path.Combine(ObjectModelHelpers.TempProjectDir, "Temporary" + guid.ToString("N") + ".csproj");
             project.ReevaluateIfNecessary();
 
             if (logger != null)
@@ -535,11 +684,9 @@ namespace Microsoft.Build.UnitTests
                 project.ProjectCollection.RegisterLogger(logger);
             }
 
-            // Return to the original directory.
-            Directory.SetCurrentDirectory(originalDir);
-
             return project;
         }
+
         /// <summary>
         /// Creates a project in memory and builds the default targets.  The build is
         /// expected to succeed.
@@ -557,15 +704,14 @@ namespace Microsoft.Build.UnitTests
         }
 
         internal static void BuildProjectExpectSuccess
-           (
-           string projectContents,
-            ILogger logger
-           )
+            (
+            string projectContents,
+            params ILogger[] loggers
+            )
         {
-            Project project = ObjectModelHelpers.CreateInMemoryProject(projectContents, logger);
-
-            bool success = project.Build(logger);
-            Assert.IsTrue(success, "Build failed.  See Standard Out tab for details");
+            Project project = CreateInMemoryProject(projectContents, logger: null); // logger is null so we take care of loggers ourselves
+            bool success = project.Build(loggers);
+            Assert.True(success);
         }
 
         /// <summary>
@@ -594,7 +740,7 @@ namespace Microsoft.Build.UnitTests
             Project project = ObjectModelHelpers.CreateInMemoryProject(projectContents, logger);
 
             bool success = project.Build(logger);
-            Assert.IsFalse(success, "Build succeeded, but shouldn't have.  See Standard Out tab for details");
+            Assert.False(success); // "Build succeeded, but shouldn't have.  See Standard Out tab for details"
         }
 
         /// <summary>
@@ -613,9 +759,7 @@ namespace Microsoft.Build.UnitTests
             string newActualProjectContents = project.Xml.RawXml;
 
             // Replace single-quotes with double-quotes, and normalize whitespace.
-            XmlDocument xmldoc = new XmlDocument();
-            xmldoc.LoadXml(ObjectModelHelpers.CleanupFileContents(newExpectedProjectContents));
-            newExpectedProjectContents = ObjectModelHelpers.NormalizeXmlWhitespace(xmldoc);
+            newExpectedProjectContents = NormalizeXmlWhitespace(CleanupFileContents(newExpectedProjectContents));
 
             // Compare the actual XML with the expected XML.
             Console.WriteLine("================================= EXPECTED ===========================================");
@@ -624,14 +768,14 @@ namespace Microsoft.Build.UnitTests
             Console.WriteLine("================================== ACTUAL ============================================");
             Console.WriteLine(newActualProjectContents);
             Console.WriteLine();
-            Assert.AreEqual(newExpectedProjectContents, newActualProjectContents, "Project XML does not match expected XML.  See 'Standard Out' tab for details.");
+            Assert.Equal(newExpectedProjectContents, newActualProjectContents); // "Project XML does not match expected XML.  See 'Standard Out' tab for details."
         }
 
 
         private static string s_tempProjectDir = null;
 
         /// <summary>
-        /// Returns the path %TEMP%\TempDirForMSBuildUnitTests
+        /// Creates and returns a unique path under temp
         /// </summary>
         internal static string TempProjectDir
         {
@@ -639,7 +783,9 @@ namespace Microsoft.Build.UnitTests
             {
                 if (s_tempProjectDir == null)
                 {
-                    s_tempProjectDir = Path.Combine(Path.GetTempPath(), "TempDirForMSBuildUnitTests");
+                    s_tempProjectDir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+
+                    Directory.CreateDirectory(s_tempProjectDir);
                 }
 
                 return s_tempProjectDir;
@@ -659,7 +805,7 @@ namespace Microsoft.Build.UnitTests
         /// </summary>
         internal static void DeleteDirectory(string dir)
         {
-            // Manually deleting all children, but intentionally leaving the 
+            // Manually deleting all children, but intentionally leaving the
             // Temp project directory behind due to locking issues which were causing
             // failures in main on Amd64-WOW runs.
 
@@ -691,10 +837,10 @@ namespace Microsoft.Build.UnitTests
                     }
                     else
                     {
-                        // All the retries have failed. We will now fail with the 
-                        // actual problem now instead of with some more difficult-to-understand 
-                        // issue later. 
-                        throw ex;
+                        // All the retries have failed. We will now fail with the
+                        // actual problem now instead of with some more difficult-to-understand
+                        // issue later.
+                        throw;
                     }
                 }
             }
@@ -702,14 +848,12 @@ namespace Microsoft.Build.UnitTests
 
         /// <summary>
         /// Creates a file in the %TEMP%\TempDirForMSBuildUnitTests directory, after cleaning
-        /// up the file contents (replacing single-back-quote with double-quote, etc.). 
+        /// up the file contents (replacing single-back-quote with double-quote, etc.).
         /// Silently OVERWRITES existing file.
         /// </summary>
-        /// <param name="fileRelativePath"></param>
-        /// <param name="fileContents"></param>
-        internal static string CreateFileInTempProjectDirectory(string fileRelativePath, string fileContents)
+        internal static string CreateFileInTempProjectDirectory(string fileRelativePath, string fileContents, Encoding encoding = null)
         {
-            Assert.IsFalse(String.IsNullOrEmpty(fileRelativePath));
+            Assert.False(String.IsNullOrEmpty(fileRelativePath));
             string fullFilePath = Path.Combine(TempProjectDir, fileRelativePath);
             Directory.CreateDirectory(Path.GetDirectoryName(fullFilePath));
 
@@ -718,7 +862,18 @@ namespace Microsoft.Build.UnitTests
             {
                 try
                 {
-                    File.WriteAllText(fullFilePath, CleanupFileContents(fileContents));
+                    if (encoding == null)
+                    {
+                        // This method uses UTF-8 encoding without a Byte-Order Mark (BOM)
+                        // https://msdn.microsoft.com/en-us/library/ms143375(v=vs.110).aspx#Remarks
+                        File.WriteAllText(fullFilePath, CleanupFileContents(fileContents));
+                    }
+                    else
+                    {
+                        // If it is necessary to include a UTF-8 identifier, such as a byte order mark, at the beginning of a file,
+                        // use the WriteAllText(String,?String,?Encoding) method overload with UTF8 encoding.
+                        File.WriteAllText(fullFilePath, CleanupFileContents(fileContents), encoding);
+                    }
                     break;
                 }
                 catch (Exception ex)
@@ -729,10 +884,10 @@ namespace Microsoft.Build.UnitTests
                     }
                     else
                     {
-                        // All the retries have failed. We will now fail with the 
-                        // actual problem now instead of with some more difficult-to-understand 
-                        // issue later. 
-                        throw ex;
+                        // All the retries have failed. We will now fail with the
+                        // actual problem now instead of with some more difficult-to-understand
+                        // issue later.
+                        throw;
                     }
                 }
             }
@@ -758,7 +913,7 @@ namespace Microsoft.Build.UnitTests
             MockLogger logger = new MockLogger();
             bool success = BuildTempProjectFileWithTargets(projectFileRelativePath, targets, additionalProperties, logger);
 
-            Assert.IsTrue(success, "Build failed.  See Standard Out tab for details");
+            Assert.True(success); // "Build failed.  See Standard Out tab for details"
 
             return logger;
         }
@@ -771,7 +926,7 @@ namespace Microsoft.Build.UnitTests
             MockLogger logger = new MockLogger();
             bool success = BuildTempProjectFileWithTargets(projectFileRelativePath, null, null, logger);
 
-            Assert.IsFalse(success, "Build unexpectedly succeeded.  See Standard Out tab for details");
+            Assert.False(success); // "Build unexpectedly succeeded.  See Standard Out tab for details"
 
             return logger;
         }
@@ -784,7 +939,7 @@ namespace Microsoft.Build.UnitTests
             MockLogger logger = new MockLogger();
             bool success = BuildTempProjectFileWithTargets(projectFileRelativePath, targets, additionalProperties, logger);
 
-            Assert.IsFalse(success, "Build unexpectedly succeeded.  See Standard Out tab for details");
+            Assert.False(success); // "Build unexpectedly succeeded.  See Standard Out tab for details"
 
             return logger;
         }
@@ -900,6 +1055,46 @@ namespace Microsoft.Build.UnitTests
             }
             return files;
         }
+
+        /// <summary>
+        /// Get items of item type "i" with using the item xml fragment passed in
+        /// </summary>
+        internal static IList<ProjectItem> GetItemsFromFragment(string fragment, bool allItems = false)
+        {
+            string content = FormatProjectContentsWithItemGroupFragment(fragment);
+
+            IList<ProjectItem> items = GetItems(content, allItems);
+            return items;
+        }
+
+        internal static string GetConcatenatedItemsOfType(this Project project, string itemType, string itemSeparator = ";")
+        {
+            return string.Join(itemSeparator, project.Items.Where(i => i.ItemType.Equals(itemType)).Select(i => i.EvaluatedInclude));
+        }
+
+        /// <summary>
+        /// Get the items of type "i" in the project provided
+        /// </summary>
+        internal static IList<ProjectItem> GetItems(string content, bool allItems = false)
+        {
+            var projectXml = ProjectRootElement.Create(XmlReader.Create(new StringReader(CleanupFileContents(content))));
+            Project project = new Project(projectXml);
+            IList<ProjectItem> item = Helpers.MakeList(allItems ? project.Items : project.GetItems("i"));
+
+            return item;
+        }
+
+        internal static string FormatProjectContentsWithItemGroupFragment(string fragment)
+        {
+            return
+                $@"
+                    <Project xmlns='http://schemas.microsoft.com/developer/msbuild/2003' >
+                        <ItemGroup>
+                            {fragment}
+                        </ItemGroup>
+                    </Project>
+                ";
+        }
     }
 
     /// <summary>
@@ -907,6 +1102,30 @@ namespace Microsoft.Build.UnitTests
     /// </summary>
     internal static partial class Helpers
     {
+        internal static string GetOSPlatformAsString()
+        {
+            var currentPlatformString = string.Empty;
+
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                currentPlatformString = "WINDOWS";
+            }
+            else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            {
+                currentPlatformString = "LINUX";
+            }
+            else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            {
+                currentPlatformString = "OSX";
+            }
+            else
+            {
+                Assert.True(false, "unrecognized current platform");
+            }
+
+            return currentPlatformString;
+        }
+
         /// <summary>
         /// Returns the count of objects returned by an enumerator
         /// </summary>
@@ -985,11 +1204,11 @@ namespace Microsoft.Build.UnitTests
         /// </summary>
         internal static void AssertListsValueEqual<T>(IList<T> one, IList<T> two)
         {
-            Assert.AreEqual(one.Count, two.Count);
+            Assert.Equal(one.Count, two.Count);
 
             for (int i = 0; i < one.Count; i++)
             {
-                Assert.AreEqual(one[i], two[i]);
+                Assert.Equal(one[i], two[i]);
             }
         }
 
@@ -998,17 +1217,46 @@ namespace Microsoft.Build.UnitTests
         /// </summary>
         internal static void AssertCollectionsValueEqual<T>(ICollection<T> one, ICollection<T> two)
         {
-            Assert.AreEqual(one.Count, two.Count);
+            Assert.Equal(one.Count, two.Count);
 
             foreach (T item in one)
             {
-                Assert.IsTrue(two.Contains(item));
+                Assert.True(two.Contains(item));
             }
 
             foreach (T item in two)
             {
-                Assert.IsTrue(one.Contains(item));
+                Assert.True(one.Contains(item));
             }
+        }
+
+        internal static void AssertDictionariesEqual<K, V>(IDictionary<K, V> x, IDictionary<K, V> y, Action<KeyValuePair<K, V>, KeyValuePair<K, V>> assertPairsEqual)
+        {
+            if (x == null || y == null)
+            {
+                Assert.True(x == null && y == null);
+                return;
+            }
+
+            Assert.Equal(x.Count, y.Count);
+
+            for (var i = 0; i < x.Count; i++)
+            {
+                var xPair = x.ElementAt(i);
+                var yPair = y.ElementAt(i);
+
+                assertPairsEqual(xPair, yPair);
+            }
+        }
+
+        internal static void AssertDictionariesEqual(IDictionary<string, string> x, IDictionary<string, string> y)
+        {
+            AssertDictionariesEqual(x, y,
+                (xPair, yPair) =>
+                {
+                    Assert.Equal(xPair.Key, yPair.Key);
+                    Assert.Equal(xPair.Value, yPair.Value);
+                });
         }
 
         /// <summary>
@@ -1029,7 +1277,7 @@ namespace Microsoft.Build.UnitTests
                 listTwo.Add(item);
             }
 
-            AssertCollectionsValueEqual<T>(listOne, listTwo);
+            AssertCollectionsValueEqual(listOne, listTwo);
         }
 
         /// <summary>
@@ -1041,7 +1289,7 @@ namespace Microsoft.Build.UnitTests
             MockLogger logger;
             bool result;
             BuildProjectWithNewOM(content, out logger, out result, false);
-            Assert.IsTrue(result);
+            Assert.True(result);
 
             return logger;
         }
@@ -1071,7 +1319,7 @@ namespace Microsoft.Build.UnitTests
             MockLogger logger;
             bool result;
             BuildProjectWithNewOM(content, out logger, out result, allowTaskCrash);
-            Assert.IsFalse(result);
+            Assert.False(result);
             return logger;
         }
 
@@ -1084,9 +1332,9 @@ namespace Microsoft.Build.UnitTests
         internal static void CompareProjectXml(string newExpectedProjectContents, string newActualProjectContents)
         {
             // Replace single-quotes with double-quotes, and normalize whitespace.
-            XmlDocument xmldoc = new XmlDocument();
-            xmldoc.LoadXml(ObjectModelHelpers.CleanupFileContents(newExpectedProjectContents));
-            newExpectedProjectContents = ObjectModelHelpers.NormalizeXmlWhitespace(xmldoc);
+            newExpectedProjectContents =
+                ObjectModelHelpers.NormalizeXmlWhitespace(
+                    ObjectModelHelpers.CleanupFileContents(newExpectedProjectContents));
 
             // Compare the actual XML with the expected XML.
             if (newExpectedProjectContents != newActualProjectContents)
@@ -1097,7 +1345,7 @@ namespace Microsoft.Build.UnitTests
                 Console.WriteLine("================================== ACTUAL ============================================");
                 Console.WriteLine(newActualProjectContents);
                 Console.WriteLine();
-                Assert.AreEqual(newExpectedProjectContents, newActualProjectContents, "Project XML does not match expected XML.  See 'Standard Out' tab for details.");
+                Assert.Equal(newExpectedProjectContents, newActualProjectContents); // "Project XML does not match expected XML.  See 'Standard Out' tab for details."
             }
         }
 
@@ -1112,9 +1360,9 @@ namespace Microsoft.Build.UnitTests
         /// <summary>
         /// Verify that the saved project content matches the provided content
         /// </summary>
-        internal static void VerifyAssertProjectContent(string expected, ProjectRootElement project)
+        internal static void VerifyAssertProjectContent(string expected, ProjectRootElement project, bool ignoreFirstLineOfActual = true)
         {
-            VerifyAssertLineByLine(expected, project.RawXml, true /* ignoreFirstLineOfActual */);
+            VerifyAssertLineByLine(expected, project.RawXml, ignoreFirstLineOfActual);
         }
 
         /// <summary>
@@ -1126,24 +1374,95 @@ namespace Microsoft.Build.UnitTests
         }
 
         /// <summary>
+        /// Write the given <see cref="projectContents"/> in a new temp directory and create the given <see cref="files"/> relative to the project
+        /// </summary>
+        /// <returns>the path to the temp root directory that contains the project and files</returns>
+        internal static string CreateProjectInTempDirectoryWithFiles(string projectContents, string[] files, out string createdProjectFile, out string[] createdFiles, string relativePathFromRootToProject = ".")
+        {
+            var root = GetTempDirectoryWithGuid();
+            Directory.CreateDirectory(root);
+
+            var projectDir = Path.Combine(root, relativePathFromRootToProject);
+            Directory.CreateDirectory(projectDir);
+
+            createdProjectFile = Path.Combine(projectDir, "build.proj");
+            File.WriteAllText(createdProjectFile, ObjectModelHelpers.CleanupFileContents(projectContents));
+
+            createdFiles = CreateFilesInDirectory(root, files);
+
+            return root;
+        }
+
+        private static string GetTempDirectoryWithGuid()
+        {
+            return Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
+        }
+
+        /// <summary>
         /// Creates a bunch of temporary files with the specified names and returns
         /// their full paths (so they can ultimately be cleaned up)
         /// </summary>
         internal static string[] CreateFiles(params string[] files)
         {
-            string directory = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
+            string directory = GetTempDirectoryWithGuid();
             Directory.CreateDirectory(directory);
 
-            string[] result = new string[files.Length];
+            return CreateFilesInDirectory(directory, files);
+        }
 
-            for (int i = 0; i < files.Length; i++)
+        /// <summary>
+        /// Creates a bunch of temporary files in the given directory with the specified names and returns
+        /// their full paths (so they can ultimately be cleaned up)
+        /// </summary>
+        internal static string[] CreateFilesInDirectory(string rootDirectory, params string[] files)
+        {
+            if (files == null)
             {
-                string fullPath = Path.Combine(directory, files[i]);
-                File.WriteAllText(fullPath, String.Empty);
+                return null;
+            }
+
+            Assert.True(Directory.Exists(rootDirectory), $"Directory {rootDirectory} does not exist");
+
+            var result = new string[files.Length];
+
+            for (var i = 0; i < files.Length; i++)
+            {
+                // On Unix there is the risk of creating one file with '\' in its name instead of directories.
+                // Therefore split the arguments into path fragments and recompose the path.
+                var fileFragments = SplitPathIntoFragments(files[i]);
+                var rootDirectoryFragments = SplitPathIntoFragments(rootDirectory);
+                var pathFragments = rootDirectoryFragments.Concat(fileFragments);
+
+                var fullPath = Path.Combine(pathFragments.ToArray());
+
+                var directoryName = Path.GetDirectoryName(fullPath);
+
+                Directory.CreateDirectory(directoryName);
+                Assert.True(Directory.Exists(directoryName));
+
+                File.WriteAllText(fullPath, string.Empty);
+                Assert.True(File.Exists(fullPath));
+
                 result[i] = fullPath;
             }
 
             return result;
+        }
+
+        private static string[] SplitPathIntoFragments(string path)
+        {
+            // Both Path.AltDirectorSeparatorChar and Path.DirectorySeparator char return '/' on OSX,
+            // which renders them useless for the following case where I want to split a path that may contain either separator
+            var splits = path.Split('/', '\\');
+
+            // if the path is rooted then the first split is either empty (Unix) or 'c:' (Windows)
+            // in this case the root must be restored back to '/' (Unix) or 'c:\' (Windows)
+            if (Path.IsPathRooted(path))
+            {
+                splits[0] = Path.GetPathRoot(path);
+            }
+
+            return splits;
         }
 
         /// <summary>
@@ -1196,35 +1515,14 @@ namespace Microsoft.Build.UnitTests
 
             if (ex1 == null && ex2 == null)
             {
-                Assert.Fail("Neither threw");
+                Assert.True(false, "Neither threw");
             }
 
-            Assert.AreNotEqual(null, ex1, "First method did not throw, second: {0}", ex2 == null ? "" : ex2.GetType() + ex2.Message);
-            Assert.AreNotEqual(null, ex2, "Second method did not throw, first: {0}", ex1 == null ? "" : ex1.GetType() + ex1.Message);
-            Assert.AreEqual(ex1.GetType(), ex2.GetType(), "Both methods threw but the first threw {0} '{1}' and the second threw {2} '{3}'", ex1.GetType(), ex1.Message, ex2.GetType(), ex2.Message);
+            Assert.NotNull(ex1); // "First method did not throw, second: {0}", ex2 == null ? "" : ex2.GetType() + ex2.Message);
+            Assert.NotNull(ex2); // "Second method did not throw, first: {0}", ex1 == null ? "" : ex1.GetType() + ex1.Message);
+            Assert.Equal(ex1.GetType(), ex2.GetType()); // "Both methods threw but the first threw {0} '{1}' and the second threw {2} '{3}'", ex1.GetType(), ex1.Message, ex2.GetType(), ex2.Message);
 
             Console.WriteLine("COMPARE EXCEPTIONS:\n\n#1: {0}\n\n#2: {1}", ex1.Message, ex2.Message);
-        }
-
-        /// <summary>
-        /// Given a method accepting no parameters and returning none, verifies it 
-        /// throws an exception of the specified type.
-        /// </summary>
-        internal static void VerifyAssertThrows(Action method, Type expectedExceptionType)
-        {
-            try
-            {
-                method();
-            }
-            catch (Exception ex)
-            {
-                Assert.IsInstanceOfType(ex, expectedExceptionType);
-                Console.WriteLine("Caught '{0}'", ex.Message);
-                return;
-            }
-
-            Debugger.Break();
-            Assert.Fail("Did not throw but expected {0} exception", expectedExceptionType.ToString());
         }
 
         /// <summary>
@@ -1232,14 +1530,16 @@ namespace Microsoft.Build.UnitTests
         /// </summary>
         internal static void VerifyAssertThrowsInvalidOperation(Action method)
         {
-            VerifyAssertThrows(method, typeof(InvalidOperationException));
+            Assert.Throws<InvalidOperationException>(method);
         }
 
         /// <summary>
         /// Verify that the expected content matches the actual content
         /// </summary>
-        private static void VerifyAssertLineByLine(string expected, string actual, bool ignoreFirstLineOfActual)
+        internal static void VerifyAssertLineByLine(string expected, string actual, bool ignoreFirstLineOfActual, ITestOutputHelper testOutput = null)
         {
+            Action<string> LogLine = testOutput == null ? (Action<string>) Console.WriteLine : testOutput.WriteLine;
+
             string[] actualLines = SplitIntoLines(actual);
 
             if (ignoreFirstLineOfActual)
@@ -1264,7 +1564,7 @@ namespace Microsoft.Build.UnitTests
                 if (expectedLines[i] != actualLines[i])
                 {
                     expectedAndActualDontMatch = true;
-                    Console.WriteLine("<   " + expectedLines[i] + "\n>   " + actualLines[i] + "\n");
+                    LogLine("<   " + expectedLines[i] + "\n>   " + actualLines[i] + "\n");
                 }
             }
 
@@ -1273,22 +1573,22 @@ namespace Microsoft.Build.UnitTests
                 string output = "\r\n#################################Expected#################################\n" + String.Join("\r\n", expectedLines);
                 output += "\r\n#################################Actual#################################\n" + String.Join("\r\n", actualLines);
 
-                Assert.Fail(output);
+                Assert.True(false, output);
             }
 
             if (actualLines.Length > expectedLines.Length)
             {
-                Console.WriteLine("\n#################################Expected#################################\n" + String.Join("\n", expectedLines));
-                Console.WriteLine("#################################Actual#################################\n" + String.Join("\n", actualLines));
+                LogLine("\n#################################Expected#################################\n" + String.Join("\n", expectedLines));
+                LogLine("#################################Actual#################################\n" + String.Join("\n", actualLines));
 
-                Assert.Fail("Expected content was shorter, actual had this extra line: '" + actualLines[expectedLines.Length] + "'");
+                Assert.True(false, "Expected content was shorter, actual had this extra line: '" + actualLines[expectedLines.Length] + "'");
             }
             else if (actualLines.Length < expectedLines.Length)
             {
-                Console.WriteLine("\n#################################Expected#################################\n" + String.Join("\n", expectedLines));
-                Console.WriteLine("#################################Actual#################################\n" + String.Join("\n", actualLines));
+                LogLine("\n#################################Expected#################################\n" + String.Join("\n", expectedLines));
+                LogLine("#################################Actual#################################\n" + String.Join("\n", actualLines));
 
-                Assert.Fail("Actual content was shorter, expected had this extra line: '" + expectedLines[actualLines.Length] + "'");
+                Assert.True(false, "Actual content was shorter, expected had this extra line: '" + expectedLines[actualLines.Length] + "'");
             }
         }
 
@@ -1298,31 +1598,19 @@ namespace Microsoft.Build.UnitTests
         internal static void ClearDirtyFlag(ProjectRootElement project)
         {
             project.Save(new StringWriter());
-            Assert.IsFalse(project.HasUnsavedChanges);
+            Assert.False(project.HasUnsavedChanges);
         }
 
         /// <summary>
-        /// Command you can pass to Exec to sleep for rough number of milliseconds.
-        /// @for /l %i in (1,1,X) do "@dir %windir% > nul"
-        /// sleeps for X/100 seconds, roughly
-        /// This works around not having sleep.exe on the path.
+        /// Gets a command that can be used by an Exec task to sleep for the specified amount of time.
         /// </summary>
-        internal static string SleepCommandInMilliseconds(int milliseconds)
+        /// <param name="timeSpan">A <see cref="TimeSpan"/> representing the amount of time to sleep.</param>
+        internal static string GetSleepCommand(TimeSpan timeSpan)
         {
-            return String.Format(@"@for /l %25%25i in (1,1,{0}) do @dir %25windir%25 > nul", milliseconds / 10);
-        }
-
-        /// <summary>
-        /// Command you can pass to Exec to sleep for rough number of seconds.
-        /// @for /l %i in (1,1,X) do "@dir %windir% > nul"
-        /// sleeps for X/100 seconds, roughly
-        /// This works around not having sleep.exe on the path.
-        /// </summary>
-        /// <param name="seconds"></param>
-        /// <returns></returns>
-        internal static string SleepCommand(int seconds)
-        {
-            return SleepCommandInMilliseconds(seconds * 1000);
+            return
+                NativeMethodsShared.IsWindows
+                ? $"@powershell -NoLogo -NoProfile -command &quot;Start-Sleep -Milliseconds {(int)timeSpan.TotalMilliseconds}&quot; &gt;nul"
+                : $"sleep {timeSpan.TotalSeconds}";
         }
 
         /// <summary>
@@ -1333,6 +1621,43 @@ namespace Microsoft.Build.UnitTests
             string[] result = content.Split(new string[] { "\r\n", "\r", "\n" }, StringSplitOptions.None);
 
             return result;
+        }
+
+        /// <summary>
+        /// Used for file matching tests
+        /// MSBuild does not accept forward slashes on rooted paths, so those are returned unchanged
+        /// </summary>
+        internal static string ToForwardSlash(string path) =>
+            Path.IsPathRooted(path)
+                ? path
+                : path.ToSlash();
+
+        internal class ElementLocationComparerIgnoringType : IEqualityComparer<ElementLocation>
+        {
+            public bool Equals(ElementLocation x, ElementLocation y)
+            {
+                if (x == null)
+                {
+                    return y == null;
+                }
+
+                if (x.Line != y.Line || x.Column != y.Column)
+                {
+                    return false;
+                }
+
+                if (!String.Equals(x.File, y.File, StringComparison.OrdinalIgnoreCase))
+                {
+                    return false;
+                }
+
+                return true;
+            }
+
+            public int GetHashCode(ElementLocation obj)
+            {
+                return obj.Line.GetHashCode() ^ obj.Column.GetHashCode() ^ obj.File.GetHashCode();
+            }
         }
     }
 }
