@@ -52,6 +52,8 @@
             <!-- nuget tasks/targets that are now installed to bin dir -->
             <MSBuildFiles Include="$(RepoRoot)\nuget-support\tasks-targets\*" />
 
+            <MSBuildFiles Include="$(RepoRoot)\mono\targets\fixup\Fixup.Microsoft.NET.Sdk.Razor.Compilation.targets" />
+
             <MSBuildFiles Remove="$(MSBuildBinSrcDir)\TestTask*" />
             <MSBuildFiles Remove="$(MSBuildBinSrcDir)\Mono.Build.Tasks.*" />
             <MSBuildFiles Remove="$(MSBuildBinSrcDir)\Microsoft.Build.Tasks.CodeAnalysis.dll" />

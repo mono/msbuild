@@ -45,5 +45,7 @@ Copyright (C) Microsoft Corporation. All rights reserved.
         <UseSharedCompilation Condition="'$(UseSharedCompilation)' == ''">false</UseSharedCompilation>
         <CscToolPath Condition="'$(CscToolPath)' == '' and '$(CscToolExe)' == 'mcs.exe'">$(MSBuildFrameworkToolsPath)</CscToolPath>
         <DebugType Condition="'$(OS)' != 'Windows_NT' And ('$(DebugSymbols)'=='True' or ('$(DebugSymbols)'=='' And '$(_ConfigurationNameTmp)'=='Debug'))">portable</DebugType>
+
+        <CustomAfterRazorSdkTargets>$(MSBuildThisFileDirectory)\Fixup.Microsoft.NET.Sdk.Razor.Compilation.targets</CustomAfterRazorSdkTargets>
     </PropertyGroup>
 </Project>
