@@ -61,7 +61,15 @@ namespace Microsoft.Build.Tasks
 
         public string TargetType { get; set; }
 
-        public bool? UseSharedCompilation { get; set; }
+        // FIXME: Workaround for https://github.com/mono/mono/issues/11939 - kg
+        public bool? UseSharedCompilation {
+            get {
+                return false;
+            }
+            set {
+                return;
+            }
+        }
 
         protected virtual string ReferenceSwitch => "/reference:";
 
