@@ -341,7 +341,7 @@ function MSBuild {
     # Work around issues with Azure Artifacts credential provider
     # https://github.com/dotnet/arcade/issues/3932
     if [[ "$ci" == true ]]; then
-      dotnet nuget locals http-cache -c
+      nuget locals http-cache -Clear
     fi
 
     local toolset_dir="${_InitializeToolset%/*}"
