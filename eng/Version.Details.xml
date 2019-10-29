@@ -13,11 +13,11 @@
     </Dependency>
     <Dependency Name="Microsoft.NET.Sdk" Version="3.1.100-preview2.19528.2">
       <Uri>https://github.com/dotnet/sdk</Uri>
-      <Sha>a19b734139ab62de631c31897b0ffc35f8462f3f</Sha>
+      <Sha>334812443d8bb11afa51a7efd2f8de83e321e6e1</Sha>
     </Dependency>
     <Dependency Name="Microsoft.NET.Sdk.Razor" Version="3.1.0-preview2.19528.1">
       <Uri>https://github.com/aspnet/AspNetCore-Tooling</Uri>
-      <Sha>f283e4a7c0d47054c9a178ff0b29f00e68f307d3</Sha>
+      <Sha>d273a0f4ccfd17a50b490492929bb3617ca73c32</Sha>
     </Dependency>
     <Dependency Name="Microsoft.NET.Sdk.Web" Version="3.1.100-preview2.19529.1">
       <Uri>https://github.com/aspnet/websdk</Uri>
@@ -41,7 +41,7 @@
     </Dependency>
     <Dependency Name="NuGet.Build.Tasks" Version="5.4.0-preview.3.6271">
       <Uri>https://github.com/NuGet/NuGet.Client</Uri>
-      <Sha>bb60d6720d24890b8f3e071e70d27ea0f2bef57e</Sha>
+      <Sha>c1f6915918b82c096bbd666bd9c18528f1f70630</Sha>
     </Dependency>
   </ProductDependencies>
 </Dependencies>
