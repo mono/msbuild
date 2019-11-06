@@ -37,11 +37,11 @@
     <MicrosoftNetCompilersVersion>3.4.0-beta3-19521-01</MicrosoftNetCompilersVersion>
     <MicrosoftNETSdkVersion>3.1.100-preview3.19553.1</MicrosoftNETSdkVersion>
     <MicrosoftNETSdkRazorVersion>3.1.0-preview3.19553.1</MicrosoftNETSdkRazorVersion>
-    <MicrosoftNETSdkWebVersion>3.1.100-preview3.19554.3</MicrosoftNETSdkWebVersion>
+    <MicrosoftNETSdkWebVersion>3.1.100-preview3.19555.3</MicrosoftNETSdkWebVersion>
     <NuGetBuildTasksVersion>5.4.0-preview.3.6271</NuGetBuildTasksVersion>
     <ILLinkTasksVersion>0.1.6-prerelease.19380.1</ILLinkTasksVersion>
     <MicrosoftNETCoreAppVersion>3.1.0-preview2.19521.15</MicrosoftNETCoreAppVersion>
-    <MicrosoftDotNetCliRuntimeVersion>3.1.100-preview3.19554.3</MicrosoftDotNetCliRuntimeVersion>
+    <MicrosoftDotNetCliRuntimeVersion>3.1.100-preview3.19555.1</MicrosoftDotNetCliRuntimeVersion>
   </PropertyGroup>
   <Target Name="OverrideArcadeFileVersion" AfterTargets="_InitializeAssemblyVersion">
     <!-- See https://github.com/dotnet/arcade/issues/3386
