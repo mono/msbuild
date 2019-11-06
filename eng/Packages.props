@@ -4,7 +4,7 @@
   <PropertyGroup>
       <MicrosoftNetCompilersVersion>3.4.0-beta3-19521-01</MicrosoftNetCompilersVersion>
       <CompilerToolsVersion>$(MicrosoftNetCompilersVersion)</CompilerToolsVersion>
-      <NuGetPackageVersion>5.4.0-preview.3.6271</NuGetPackageVersion>
+      <NuGetPackageVersion>5.4.0-rtm.6292</NuGetPackageVersion>
       <NuGetBuildTasksVersion Condition="'$(NuGetBuildTasksVersion)' == ''">$(NuGetPackageVersion)</NuGetBuildTasksVersion>
       <NuGetCommandsVersion Condition="'$(NuGetCommandsVersion)' == ''">$(NuGetPackageVersion)</NuGetCommandsVersion>
       <NuGetProtocolVersion Condition="'$(NuGetProtocolVersion)' == ''">$(NuGetPackageVersion)</NuGetProtocolVersion>
