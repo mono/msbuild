@@ -35,7 +35,7 @@
   <!-- Toolset Dependencies -->
   <PropertyGroup>
     <DotNetCliVersion>3.0.100</DotNetCliVersion>
-    <MicrosoftNetCompilersVersion>3.4.0-beta3-19521-01</MicrosoftNetCompilersVersion>
+    <MicrosoftNetCompilersVersion>3.4.0-beta4-19569-03</MicrosoftNetCompilersVersion>
     <MicrosoftNETSdkVersion>3.1.100-rtm.19568.4</MicrosoftNETSdkVersion>
     <MicrosoftNETSdkRazorVersion>3.1.1-servicing.19575.9</MicrosoftNETSdkRazorVersion>
     <MicrosoftNETSdkWebVersion>3.1.100-rtm.19575.2</MicrosoftNETSdkWebVersion>
