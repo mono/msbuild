@@ -15,9 +15,9 @@
       <Uri>https://github.com/aspnet/AspNetCore-Tooling</Uri>
       <Sha>806f68f84d7ecf341811e317810f9aea0e1a862e</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.NET.Sdk.Web" Version="3.1.100-rtm.19569.1">
+    <Dependency Name="Microsoft.NET.Sdk.Web" Version="3.1.100-rtm.19570.3">
       <Uri>https://github.com/aspnet/websdk</Uri>
-      <Sha>a1041655b92f65e492b7337786f235e0a1a4b731</Sha>
+      <Sha>bce20c8642d2f723578458a989a933a6202dc711</Sha>
     </Dependency>
     <Dependency Name="ILLink.Tasks" Version="0.1.6-prerelease.19380.1">
       <Uri>https://github.com/mono/linker</Uri>
@@ -27,9 +27,9 @@
       <Uri>https://github.com/dotnet/core-setup</Uri>
       <Sha>f830769364b45286b638a57176d4a7997dbc5237</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.Cli.Runtime" Version="3.1.100-rtm.19568.3">
+    <Dependency Name="Microsoft.DotNet.Cli.Runtime" Version="3.1.100-rtm.19570.4">
       <Uri>https://github.com/dotnet/cli</Uri>
-      <Sha>cc6bdda9777fff833fe170e3006470e9409521cf</Sha>
+      <Sha>fb03f1a77a04bf2db2b6aba9f1f65a1316320e9a</Sha>
     </Dependency>
     <Dependency Name="NuGet.Build.Tasks" Version="5.4.0-rtm.6292">
       <Uri>https://github.com/NuGet/NuGet.Client</Uri>
