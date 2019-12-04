@@ -11,13 +11,13 @@
       <Uri>https://github.com/dotnet/sdk</Uri>
       <Sha>49bbede419cf63e15c70f4b463f80e4811fe3f34</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.NET.Sdk.Razor" Version="3.1.0">
+    <Dependency Name="Microsoft.NET.Sdk.Razor" Version="3.1.1-servicing.19575.9">
       <Uri>https://github.com/aspnet/AspNetCore-Tooling</Uri>
-      <Sha>806f68f84d7ecf341811e317810f9aea0e1a862e</Sha>
+      <Sha>5a489a79189da32e5046c3eeda5f80c4e1258cb8</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.NET.Sdk.Web" Version="3.1.100-rtm.19570.3">
+    <Dependency Name="Microsoft.NET.Sdk.Web" Version="3.1.100-rtm.19575.2">
       <Uri>https://github.com/aspnet/websdk</Uri>
-      <Sha>bce20c8642d2f723578458a989a933a6202dc711</Sha>
+      <Sha>72a4eb78f1aa8af48f6fd7441fccea38639d9d6d</Sha>
     </Dependency>
     <Dependency Name="ILLink.Tasks" Version="0.1.6-prerelease.19380.1">
       <Uri>https://github.com/mono/linker</Uri>
@@ -27,9 +27,9 @@
       <Uri>https://github.com/dotnet/core-setup</Uri>
       <Sha>f830769364b45286b638a57176d4a7997dbc5237</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.Cli.Runtime" Version="3.1.100-rtm.19570.4">
+    <Dependency Name="Microsoft.DotNet.Cli.Runtime" Version="3.1.101-servicing.19572.3">
       <Uri>https://github.com/dotnet/cli</Uri>
-      <Sha>fb03f1a77a04bf2db2b6aba9f1f65a1316320e9a</Sha>
+      <Sha>0e5712bd568bb17296171cf7f6bc31ecf414b0c0</Sha>
     </Dependency>
     <Dependency Name="NuGet.Build.Tasks" Version="5.4.0-rtm.6292">
       <Uri>https://github.com/NuGet/NuGet.Client</Uri>
