@@ -11,9 +11,9 @@
       <Uri>https://github.com/dotnet/sdk</Uri>
       <Sha>49bbede419cf63e15c70f4b463f80e4811fe3f34</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.NET.Sdk.Razor" Version="3.1.1-servicing.19575.9">
+    <Dependency Name="Microsoft.NET.Sdk.Razor" Version="3.1.1-servicing.19605.10">
       <Uri>https://github.com/aspnet/AspNetCore-Tooling</Uri>
-      <Sha>5a489a79189da32e5046c3eeda5f80c4e1258cb8</Sha>
+      <Sha>2035949f6bcb51263b7036e4acd2b33ac1cb713c</Sha>
     </Dependency>
     <Dependency Name="Microsoft.NET.Sdk.Web" Version="3.1.100-rtm.19575.2">
       <Uri>https://github.com/aspnet/websdk</Uri>
