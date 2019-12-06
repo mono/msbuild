@@ -23,9 +23,9 @@
       <Uri>https://github.com/mono/linker</Uri>
       <Sha>1127689f262d52ea8ff68ef03d706fa62b3b40a1</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.NETCore.App" Version="3.1.0-preview2.19521.15">
+    <Dependency Name="Microsoft.NETCore.App" Version="3.1.1-servicing.19605.1">
       <Uri>https://github.com/dotnet/core-setup</Uri>
-      <Sha>f830769364b45286b638a57176d4a7997dbc5237</Sha>
+      <Sha>bdc5c315212055223ac8b1b1ec298bc017ddc5ec</Sha>
     </Dependency>
     <Dependency Name="Microsoft.DotNet.Cli.Runtime" Version="3.1.101-servicing.19572.3">
       <Uri>https://github.com/dotnet/cli</Uri>

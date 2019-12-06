@@ -40,7 +40,7 @@
     <MicrosoftNETSdkWebVersion>3.1.100-rtm.19575.2</MicrosoftNETSdkWebVersion>
     <NuGetBuildTasksVersion>5.4.0-rtm.6292</NuGetBuildTasksVersion>
     <ILLinkTasksVersion>0.1.6-prerelease.19380.1</ILLinkTasksVersion>
-    <MicrosoftNETCoreAppVersion>3.1.0-preview2.19521.15</MicrosoftNETCoreAppVersion>
+    <MicrosoftNETCoreAppVersion>3.1.1-servicing.19605.1</MicrosoftNETCoreAppVersion>
     <MicrosoftDotNetCliRuntimeVersion>3.1.101-servicing.19572.3</MicrosoftDotNetCliRuntimeVersion>
   </PropertyGroup>
   <Target Name="OverrideArcadeFileVersion" AfterTargets="_InitializeAssemblyVersion">
