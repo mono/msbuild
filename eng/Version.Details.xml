@@ -7,9 +7,9 @@
     </Dependency>
   </ToolsetDependencies>
   <ProductDependencies>
-    <Dependency Name="Microsoft.NET.Sdk" Version="3.1.100-rtm.19568.4">
+    <Dependency Name="Microsoft.NET.Sdk" Version="3.1.200-preview1.19605.9">
       <Uri>https://github.com/dotnet/sdk</Uri>
-      <Sha>49bbede419cf63e15c70f4b463f80e4811fe3f34</Sha>
+      <Sha>6da67c201aa072bde65cee62d2e921de43e387f3</Sha>
     </Dependency>
     <Dependency Name="Microsoft.NET.Sdk.Razor" Version="3.1.1-servicing.19575.9">
       <Uri>https://github.com/aspnet/AspNetCore-Tooling</Uri>
