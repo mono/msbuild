@@ -31,9 +31,9 @@
       <Uri>https://github.com/dotnet/cli</Uri>
       <Sha>0e5712bd568bb17296171cf7f6bc31ecf414b0c0</Sha>
     </Dependency>
-    <Dependency Name="NuGet.Build.Tasks" Version="5.4.0-rtm.6292">
+    <Dependency Name="NuGet.Build.Tasks" Version="5.5.0-preview.1.6319">
       <Uri>https://github.com/NuGet/NuGet.Client</Uri>
-      <Sha>6f8eb3a2e1db6b458451b9cfd2a4f5557769b041</Sha>
+      <Sha>ba2a72ac9afd9e7260798a6ad14088297570b350</Sha>
     </Dependency>
   </ProductDependencies>
 </Dependencies>
