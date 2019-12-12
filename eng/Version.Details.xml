@@ -27,17 +27,17 @@
       <Uri>https://github.com/dotnet/core-setup</Uri>
       <Sha>65f04fb6db7a5e198d05dbebd5c4ad21eb018f89</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.Cli.Runtime" Version="3.1.200-preview.19611.2" CoherentParentDependency="Microsoft.Dotnet.Toolset.Internal">
+    <Dependency Name="Microsoft.DotNet.Cli.Runtime" Version="3.1.200-preview.19611.9" CoherentParentDependency="Microsoft.Dotnet.Toolset.Internal">
       <Uri>https://github.com/dotnet/cli</Uri>
-      <Sha>568c0c8e3537a29590ad126f71c00d27fb96080b</Sha>
+      <Sha>97c36cec62f49a6f2c970f7b5fa74ed3b457df56</Sha>
     </Dependency>
     <Dependency Name="NuGet.Build.Tasks" Version="5.5.0-preview.1.6319" CoherentParentDependency="Microsoft.Dotnet.Toolset.Internal">
       <Uri>https://github.com/NuGet/NuGet.Client</Uri>
       <Sha>ba2a72ac9afd9e7260798a6ad14088297570b350</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.Dotnet.Toolset.Internal" Version="3.1.200-preview.19611.27">
+    <Dependency Name="Microsoft.Dotnet.Toolset.Internal" Version="3.1.200-preview.19611.31">
       <Uri>https://github.com/dotnet/toolset</Uri>
-      <Sha>b81f1d1eb9d0d60e1975b3f57522fe142aeba40f</Sha>
+      <Sha>5b56064b6459a796f4f16e23b5392c7b71314a1b</Sha>
     </Dependency>
   </ProductDependencies>
 </Dependencies>
