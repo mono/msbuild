@@ -23,7 +23,7 @@
     <SemanticVersioningV1>true</SemanticVersioningV1>
     <MicroBuildPluginsSwixBuildVersion>1.0.672</MicroBuildPluginsSwixBuildVersion>
     <MonoBuild Condition="'$(Configuration)' == 'Debug-MONO' or '$(Configuration)' == 'Release-MONO'">true</MonoBuild>
-    <MicrosoftDotnetToolsetInternalVersion>3.1.200-preview.19617.14</MicrosoftDotnetToolsetInternalVersion>
+    <MicrosoftDotnetToolsetInternalVersion>3.1.200-preview.19618.5</MicrosoftDotnetToolsetInternalVersion>
   </PropertyGroup>
   <!-- Repo Toolset Features -->
   <PropertyGroup Condition="'$(MonoBuild)' != 'true'">
@@ -38,7 +38,7 @@
     <MicrosoftNETSdkVersion>3.1.200-preview.19617.15</MicrosoftNETSdkVersion>
     <MicrosoftNETSdkRazorVersion>3.1.1-servicing.19577.2</MicrosoftNETSdkRazorVersion>
     <MicrosoftNETSdkWebVersion>3.1.100-rtm.19575.2</MicrosoftNETSdkWebVersion>
-    <NuGetBuildTasksVersion>5.5.0-preview.1.6319</NuGetBuildTasksVersion>
+    <NuGetBuildTasksVersion>5.5.0-preview.1.6330</NuGetBuildTasksVersion>
     <ILLinkTasksVersion>0.1.6-prerelease.19380.1</ILLinkTasksVersion>
     <MicrosoftNETCoreAppVersion>3.1.0-rtm.19565.2</MicrosoftNETCoreAppVersion>
     <MicrosoftDotNetCliRuntimeVersion>3.1.200-preview.19617.3</MicrosoftDotNetCliRuntimeVersion>
