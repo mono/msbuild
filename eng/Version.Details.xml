@@ -7,9 +7,9 @@
     </Dependency>
   </ToolsetDependencies>
   <ProductDependencies>
-    <Dependency Name="Microsoft.NET.Sdk" Version="3.1.200-preview.19617.15" CoherentParentDependency="Microsoft.Dotnet.Toolset.Internal">
+    <Dependency Name="Microsoft.NET.Sdk" Version="3.1.200-preview.19619.2" CoherentParentDependency="Microsoft.Dotnet.Toolset.Internal">
       <Uri>https://github.com/dotnet/sdk</Uri>
-      <Sha>7e7e3eab372d4c76824ba8c31b05f11b94b8a057</Sha>
+      <Sha>43c2cface2fdd4fdff1606919fb295e7166711f9</Sha>
     </Dependency>
     <Dependency Name="Microsoft.NET.Sdk.Razor" Version="3.1.1-servicing.19577.2" CoherentParentDependency="Microsoft.Dotnet.Toolset.Internal">
       <Uri>https://github.com/aspnet/AspNetCore-Tooling</Uri>
@@ -35,9 +35,9 @@
       <Uri>https://github.com/NuGet/NuGet.Client</Uri>
       <Sha>6f7be0986028256f05c894eac2f7816c85611984</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.Dotnet.Toolset.Internal" Version="3.1.200-preview.19618.7">
+    <Dependency Name="Microsoft.Dotnet.Toolset.Internal" Version="3.1.200-preview.19619.3">
       <Uri>https://github.com/dotnet/toolset</Uri>
-      <Sha>66f1a1e2a216f8bf094dd0b1c904f62eafdc3fd9</Sha>
+      <Sha>7063a4771f8b1f2c503af73c3e7e1f6e5bfd129b</Sha>
     </Dependency>
   </ProductDependencies>
 </Dependencies>
