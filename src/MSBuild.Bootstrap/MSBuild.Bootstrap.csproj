@@ -16,6 +16,8 @@
     <ProjectReference Include="..\Framework\Microsoft.Build.Framework.csproj" />
     <ProjectReference Include="..\Tasks\Microsoft.Build.Tasks.csproj" />
     <ProjectReference Include="..\Utilities\Microsoft.Build.Utilities.csproj" />
+
+    <ProjectReference Include="..\Build\Microsoft.Build.csproj" Condition="'$(MonoBuild)' == 'true'" />
   </ItemGroup>
   <ItemGroup>
     <!-- Include NuGet build tasks -->
@@ -52,6 +54,12 @@
     <!-- Include DependencyModel libraries. -->
     <PackageReference Include="Microsoft.Extensions.DependencyModel" />
   </ItemGroup>
+
+  <Target Name="RemoveMicrosoftBuildReferenceForMono" BeforeTargets="ResolveAssemblyReferences" Condition="'$(MonoBuild)' == 'true'">
+      <ItemGroup>
+          <Reference Remove="Microsoft.Build" Condition="%(Reference.NuGetPackageId) == 'NuGet.PackageManagement'" />
+      </ItemGroup>
+  </Target>
 
   <!-- Use deps file from this project with additional dependencies listed instead of the one generated in the MSBuild project -->
   <Target Name="UpdateMSBuildDepsFile" AfterTargets="Build" Condition="'$(TargetFramework)' == 'netcoreapp2.1' or '$(TargetFramework)' == 'netstandard2.0'">
