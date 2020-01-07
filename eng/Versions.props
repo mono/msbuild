@@ -36,12 +36,12 @@
   <!-- Toolset Dependencies -->
   <PropertyGroup>
     <MicrosoftNETSdkVersion>3.1.200-preview.20057.1</MicrosoftNETSdkVersion>
-    <MicrosoftNETSdkRazorVersion>3.1.1-servicing.19577.2</MicrosoftNETSdkRazorVersion>
+    <MicrosoftNETSdkRazorVersion>3.1.0</MicrosoftNETSdkRazorVersion>
     <MicrosoftNETSdkWebVersion>3.1.100-rtm.19575.2</MicrosoftNETSdkWebVersion>
     <NuGetBuildTasksVersion>5.5.0-preview.2.6355</NuGetBuildTasksVersion>
     <ILLinkTasksVersion>0.1.6-prerelease.19380.1</ILLinkTasksVersion>
     <MicrosoftNETCoreAppVersion>3.1.0-rtm.19565.2</MicrosoftNETCoreAppVersion>
-    <MicrosoftDotNetCliRuntimeVersion>3.1.200-preview.19630.1</MicrosoftDotNetCliRuntimeVersion>
+    <MicrosoftDotNetCliRuntimeVersion>3.1.200-preview.20057.1</MicrosoftDotNetCliRuntimeVersion>
     <DotNetCliVersion>3.1.100</DotNetCliVersion>
   </PropertyGroup>
   <Target Name="OverrideArcadeFileVersion" AfterTargets="_InitializeAssemblyVersion">
