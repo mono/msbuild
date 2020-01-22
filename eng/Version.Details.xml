@@ -11,9 +11,9 @@
       <Uri>https://github.com/dotnet/sdk</Uri>
       <Sha>b3cf8ef9e7df8d9cb28b3545ce1f85f548deca75</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.NET.Sdk.Razor" Version="3.1.0" CoherentParentDependency="Microsoft.Dotnet.Toolset.Internal">
-      <Uri>https://github.com/aspnet/AspNetCore-Tooling</Uri>
-      <Sha>29036777e7cd2172a81c45c69e0dc257e8b8184e</Sha>
+    <Dependency Name="Microsoft.NET.Sdk.Razor" Version="3.1.2" CoherentParentDependency="Microsoft.Dotnet.Toolset.Internal">
+      <Uri>https://github.com/dotnet/aspnetcore-tooling</Uri>
+      <Sha>2dab42e151ea8020a75cdaaa8c46bf5d9093b8c0</Sha>
     </Dependency>
     <Dependency Name="Microsoft.NET.Sdk.Web" Version="3.1.200-preview.20057.3" CoherentParentDependency="Microsoft.Dotnet.Toolset.Internal">
       <Uri>https://github.com/aspnet/websdk</Uri>
@@ -35,9 +35,9 @@
       <Uri>https://github.com/NuGet/NuGet.Client</Uri>
       <Sha>cb402b5a3340ab5b2605ecc72de7f70aaac95344</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.Dotnet.Toolset.Internal" Version="3.1.200-preview.20071.4">
+    <Dependency Name="Microsoft.Dotnet.Toolset.Internal" Version="3.1.200-preview.20072.4">
       <Uri>https://github.com/dotnet/toolset</Uri>
-      <Sha>2ee3531f46b3a2d19e96bc5d498f7103ef8c4ae1</Sha>
+      <Sha>723171aeee1fa97c45d9ca532b53203c4fa116f4</Sha>
     </Dependency>
     <Dependency Name="Microsoft.Net.Compilers" Version="3.5.0-beta1-19606-04" CoherentParentDependency="Microsoft.Dotnet.Toolset.Internal">
       <Uri>https://github.com/dotnet/roslyn</Uri>
