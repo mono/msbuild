@@ -42,7 +42,7 @@
         <MSBuild
             Projects="$(MSBuildThisFileDirectory)\sdks\sdks.csproj"
             Targets="Restore"
-            Properties="DependencyPackageName=$(DependencyPackageName);DependencyPackageVersion=$(DependencyPackageVersion);DotNetPackageVersionPropsPath=$(DotNetPackageVersionPropsPath)" />
+            Properties="DependencyPackageName=$(DependencyPackageName);DependencyPackageVersion=$(DependencyPackageVersion)" />
 
         <Error
             Condition="!Exists('$(DependencyNuPkgPath)/$(DependencyPackageName.ToLower()).nuspec')"
