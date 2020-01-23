@@ -9,6 +9,5 @@
 
         <SdkVersionsFile>$(MSBuildThisFileDirectory)\SdkVersions.txt</SdkVersionsFile>
         <DotNetOverlayDirectory>$(RepoRoot)\mono\dotnet-overlay</DotNetOverlayDirectory>
-        <DotNetPackageVersionPropsPath>$(RepoRoot)\mono\build\RestoreSourcesOverrides.props</DotNetPackageVersionPropsPath>
 	</PropertyGroup>
 </Project>
