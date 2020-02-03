@@ -35,9 +35,9 @@
       <Uri>https://github.com/NuGet/NuGet.Client</Uri>
       <Sha>31852f3254dd31c862798f99bd0639133b23fd03</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.Dotnet.Toolset.Internal" Version="3.1.200-preview.20103.3">
+    <Dependency Name="Microsoft.Dotnet.Toolset.Internal" Version="3.1.200-preview.20103.4">
       <Uri>https://github.com/dotnet/toolset</Uri>
-      <Sha>5d28dba08e74c3efe328410ed2c441a77a73805a</Sha>
+      <Sha>9b0de6dd501f68753d32c602fb492be843ebf576</Sha>
     </Dependency>
     <Dependency Name="Microsoft.Net.Compilers" Version="3.5.0-beta2-20074-05" CoherentParentDependency="Microsoft.Dotnet.Toolset.Internal">
       <Uri>https://github.com/dotnet/roslyn</Uri>
