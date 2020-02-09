@@ -23,7 +23,7 @@
     <SemanticVersioningV1>true</SemanticVersioningV1>
     <MicroBuildPluginsSwixBuildVersion>1.0.672</MicroBuildPluginsSwixBuildVersion>
     <MonoBuild Condition="'$(Configuration)' == 'Debug-MONO' or '$(Configuration)' == 'Release-MONO'">true</MonoBuild>
-    <MicrosoftDotnetToolsetInternalVersion>3.1.200-preview.20107.7</MicrosoftDotnetToolsetInternalVersion>
+    <MicrosoftDotnetToolsetInternalVersion>3.1.200-preview.20108.2</MicrosoftDotnetToolsetInternalVersion>
     <MicrosoftNetCompilersVersion>3.5.0-beta3-20106-02</MicrosoftNetCompilersVersion>
   </PropertyGroup>
   <!-- Repo Toolset Features -->
@@ -35,13 +35,13 @@
   </PropertyGroup>
   <!-- Toolset Dependencies -->
   <PropertyGroup>
-    <MicrosoftNETSdkVersion>3.1.200-preview.20106.2</MicrosoftNETSdkVersion>
+    <MicrosoftNETSdkVersion>3.1.200-preview.20107.4</MicrosoftNETSdkVersion>
     <MicrosoftNETSdkRazorVersion>3.1.1</MicrosoftNETSdkRazorVersion>
     <MicrosoftNETSdkWebVersion>3.1.200-preview.20081.2</MicrosoftNETSdkWebVersion>
     <NuGetBuildTasksVersion>5.5.0-rtm.6422</NuGetBuildTasksVersion>
     <ILLinkTasksVersion>0.1.6-prerelease.19380.1</ILLinkTasksVersion>
     <MicrosoftNETCoreAppVersion>3.1.1-servicing.19608.4</MicrosoftNETCoreAppVersion>
-    <MicrosoftDotNetCliRuntimeVersion>3.1.200-preview.20105.2</MicrosoftDotNetCliRuntimeVersion>
+    <MicrosoftDotNetCliRuntimeVersion>3.1.200-preview.20107.2</MicrosoftDotNetCliRuntimeVersion>
     <DotNetCliVersion>3.0.100</DotNetCliVersion>
   </PropertyGroup>
   <Target Name="OverrideArcadeFileVersion" AfterTargets="_InitializeAssemblyVersion">
