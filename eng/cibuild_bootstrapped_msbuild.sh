@@ -111,6 +111,8 @@ if [ $host_type = "mono" ] ; then
   fi
 fi
 
+pkill -9 -f VBCSCompiler.exe
+
 if [[ $build_stage1 == true ]];
 then
     "$_InitializeBuildTool" "$_InitializeBuildToolCommand" $extra_properties /bl mono/build/update_bundled_bits.proj || exit $?
