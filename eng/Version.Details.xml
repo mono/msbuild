@@ -15,9 +15,9 @@
       <Uri>https://dev.azure.com/dnceng/internal/_git/aspnet-AspNetCore-Tooling</Uri>
       <Sha>07f16c89db55ab6f9f773cc3db6eb5a52908065e</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.NET.Sdk.Web" Version="3.1.200-preview.20081.2" CoherentParentDependency="Microsoft.Dotnet.Toolset.Internal">
+    <Dependency Name="Microsoft.NET.Sdk.Web" Version="3.1.200-preview.20113.3" CoherentParentDependency="Microsoft.Dotnet.Toolset.Internal">
       <Uri>https://github.com/aspnet/websdk</Uri>
-      <Sha>072b4fc952d6f74f24bdd27e5c8ef1d87b467e51</Sha>
+      <Sha>7b076183e29b441375628f6a9d72424330f1c5ee</Sha>
     </Dependency>
     <Dependency Name="ILLink.Tasks" Version="0.1.6-prerelease.19380.1" CoherentParentDependency="Microsoft.Dotnet.Toolset.Internal">
       <Uri>https://github.com/mono/linker</Uri>
@@ -35,9 +35,9 @@
       <Uri>https://github.com/NuGet/NuGet.Client</Uri>
       <Sha>7bac015acc5b7e0161a058c8febc98abe2386d51</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.Dotnet.Toolset.Internal" Version="3.1.200-preview.20113.1">
+    <Dependency Name="Microsoft.Dotnet.Toolset.Internal" Version="3.1.200-preview.20113.6">
       <Uri>https://github.com/dotnet/toolset</Uri>
-      <Sha>a1c6678066e7ad854eea0a877ea7fddc3895f44d</Sha>
+      <Sha>3ab06e3a80dfdb3c8d6d1a1c1499743bb185391e</Sha>
     </Dependency>
     <Dependency Name="Microsoft.Net.Compilers" Version="3.5.0-beta3-20113-03" CoherentParentDependency="Microsoft.Dotnet.Toolset.Internal">
       <Uri>https://github.com/dotnet/roslyn</Uri>
