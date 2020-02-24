@@ -23,7 +23,7 @@
     <SemanticVersioningV1>true</SemanticVersioningV1>
     <MicroBuildPluginsSwixBuildVersion>1.0.672</MicroBuildPluginsSwixBuildVersion>
     <MonoBuild Condition="'$(Configuration)' == 'Debug-MONO' or '$(Configuration)' == 'Release-MONO'">true</MonoBuild>
-    <MicrosoftDotnetToolsetInternalVersion>3.1.200-preview.20123.2</MicrosoftDotnetToolsetInternalVersion>
+    <MicrosoftDotnetToolsetInternalVersion>3.1.200-preview.20124.1</MicrosoftDotnetToolsetInternalVersion>
     <MicrosoftNetCompilersVersion>3.5.0-beta4-20121-02</MicrosoftNetCompilersVersion>
   </PropertyGroup>
   <!-- Repo Toolset Features -->
