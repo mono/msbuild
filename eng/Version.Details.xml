@@ -27,17 +27,17 @@
       <Uri>https://github.com/dotnet/core-setup</Uri>
       <Sha>966115a91565d43cd545c1b8acd83eda2a0cb4cb</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.Cli.Runtime" Version="3.1.200-preview.20126.1" CoherentParentDependency="Microsoft.Dotnet.Toolset.Internal">
+    <Dependency Name="Microsoft.DotNet.Cli.Runtime" Version="3.1.200-preview.20126.2" CoherentParentDependency="Microsoft.Dotnet.Toolset.Internal">
       <Uri>https://github.com/dotnet/cli</Uri>
-      <Sha>44640862dc6c545ea60c748c6a321913fbf2bdcb</Sha>
+      <Sha>a47ca8f97e48fd858e0ee2aaab05c11f0c9bda1a</Sha>
     </Dependency>
     <Dependency Name="NuGet.Build.Tasks" Version="5.5.0-rtm.6473" CoherentParentDependency="Microsoft.Dotnet.Toolset.Internal">
       <Uri>https://github.com/NuGet/NuGet.Client</Uri>
       <Sha>4ba7bfa82f894ec32a554ca8d2df143675c85735</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.Dotnet.Toolset.Internal" Version="3.1.200-preview.20126.3">
+    <Dependency Name="Microsoft.Dotnet.Toolset.Internal" Version="3.1.200-preview.20126.4">
       <Uri>https://github.com/dotnet/toolset</Uri>
-      <Sha>845309e160dcca7868312942f6618955b14cfac0</Sha>
+      <Sha>88cdbcb087141623b35c112ab3c97dca25e6c8be</Sha>
     </Dependency>
     <Dependency Name="Microsoft.Net.Compilers" Version="3.5.0-beta4-20125-04" CoherentParentDependency="Microsoft.Dotnet.Toolset.Internal">
       <Uri>https://github.com/dotnet/roslyn</Uri>
