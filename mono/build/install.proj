@@ -32,7 +32,6 @@
         <ItemGroup>
             <MSBuildFiles Include="$(MSBuildBinSrcDir)\Microsoft.Build.*" />
             <MSBuildFiles Include="$(MSBuildBinSrcDir)\MSBuild.dll*" />
-            <MSBuildFiles Include="$(MSBuildBinSrcDir)\MSBuild.pdb" />
             <MSBuildFiles Include="$(MSBuildBinSrcDir)\MSBuild.rsp" />
 
             <MSBuildFiles Include="$(MSBuildBinSrcDir)\Microsoft.*props" />
