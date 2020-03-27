@@ -35,12 +35,12 @@
   </PropertyGroup>
   <!-- Toolset Dependencies -->
   <PropertyGroup>
-    <MicrosoftNETSdkVersion>3.1.202-servicing.20176.5</MicrosoftNETSdkVersion>
+    <MicrosoftNETSdkVersion>3.1.202-servicing.20176.7</MicrosoftNETSdkVersion>
     <MicrosoftNETSdkRazorVersion>3.1.3</MicrosoftNETSdkRazorVersion>
     <MicrosoftNETSdkWebVersion>3.1.201-servicing.20160.3</MicrosoftNETSdkWebVersion>
     <NuGetBuildTasksVersion>5.5.0-rtm.6473</NuGetBuildTasksVersion>
     <ILLinkTasksVersion>0.1.6-prerelease.19380.1</ILLinkTasksVersion>
-    <MicrosoftNETCoreAppVersion>3.1.4-servicing.20176.3</MicrosoftNETCoreAppVersion>
+    <MicrosoftNETCoreAppVersion>3.1.4-servicing.20176.4</MicrosoftNETCoreAppVersion>
     <MicrosoftDotNetCliRuntimeVersion>3.1.202-servicing.20175.3</MicrosoftDotNetCliRuntimeVersion>
     <DotNetCliVersion>3.0.100</DotNetCliVersion>
   </PropertyGroup>
