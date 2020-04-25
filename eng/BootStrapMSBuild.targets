@@ -73,6 +73,8 @@
 
       <!-- Note: we are not copying *everything* under msbuild-bin -->
       <MonoBinDirOverlayFiles Include="$(RepoRoot)\mono\layout\msbuild-bin\*" Condition="'$(MonoBuild)' == 'true'" />
+      <MonoBinDirOverlayFiles Include="$(RepoRoot)\mono\dotnet-overlay\msbuild-bin\Microsoft.NETCoreSdk.BundledVersions.props" Condition="'$(MonoBuild)' == 'true'" />
+      <MonoBinDirOverlayFiles Include="$(RepoRoot)\mono\dotnet-overlay\msbuild-bin\RuntimeIdentifierGraph.json" Condition="'$(MonoBuild)' == 'true'" />
 
       <InstalledStaticAnalysisTools Include="$(VsInstallRoot)\Team Tools\Static Analysis Tools\**\*.*" />
 
