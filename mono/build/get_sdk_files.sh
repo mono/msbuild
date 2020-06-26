@@ -24,7 +24,7 @@ OLDCWD=`pwd`
 cd $TMPDIR
 
 GetDotNetInstallScript $TMPDIR
-sh ./dotnet-install.sh --version $dotnet_sdk_version --install-dir $DOTNET_DIR --architecture x64 --skip-non-versioned-files
+bash ./dotnet-install.sh --version $dotnet_sdk_version --install-dir $DOTNET_DIR --architecture x64 --skip-non-versioned-files
 find $DOTNET_DIR -name Microsoft.NETCoreSdk.BundledVersions.props -exec cp -v {} $1 \;
 find $DOTNET_DIR -name RuntimeIdentifierGraph.json -exec cp -v {} $1 \;
 
