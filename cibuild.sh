@@ -39,8 +39,9 @@ downloadMSBuildForMono()
         mkdir -p "$PACKAGES_DIR" # Create packages dir if it doesn't exist.
 
         echo "** Downloading MSBUILD from $MSBUILD_DOWNLOAD_URL"
-        curl -sL -o "$MSBUILD_ZIP" "$MSBUILD_DOWNLOAD_URL"
-
+	# Curl is dependency on libcurl4, but some .so's need libcurl3. So using wget
+        wget "$MSBUILD_DOWNLOAD_URL"
+        mv "$MSBUILD_TAR_NAME" "$MSBUILD_ZIP"
         unzip -q "$MSBUILD_ZIP" -d "$PACKAGES_DIR"
         find "$PACKAGES_DIR/msbuild" -name "*.exe" -exec chmod "+x" '{}' ';'
         rm "$MSBUILD_ZIP"
@@ -141,6 +142,7 @@ THIS_SCRIPT_PATH="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 PACKAGES_DIR="$THIS_SCRIPT_PATH/packages"
 TOOLS_DIR="$THIS_SCRIPT_PATH/Tools"
 MSBUILD_DOWNLOAD_URL="https://github.com/Microsoft/msbuild/releases/download/mono-hosted-msbuild-v0.03/mono_msbuild_d25dd923839404bd64cc63f420e75acf96fc75c4.zip"
+MSBUILD_TAR_NAME="mono_msbuild_d25dd923839404bd64cc63f420e75acf96fc75c4.zip"
 MSBUILD_ZIP="$PACKAGES_DIR/msbuild.zip"
 HOME_DEFAULT="$WORKSPACE/msbuild-CI-home"
 TEMP_DEFAULT="$WORKSPACE/tmp"
