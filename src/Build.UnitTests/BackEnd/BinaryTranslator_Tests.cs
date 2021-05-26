@@ -440,7 +440,9 @@ namespace Microsoft.Build.UnitTests.BackEnd
         [InlineData("en-US")]
         [InlineData("en-CA")]
         [InlineData("zh-HK")]
+ #if !MONO
         [InlineData("sr-Cyrl-CS")]
+ #endif
         public void CultureInfo(string name)
         {
             CultureInfo value = new CultureInfo(name);
@@ -560,6 +562,7 @@ namespace Microsoft.Build.UnitTests.BackEnd
             HelperAssertAssemblyNameEqual(value, deserializedValue);
         }
 
+#if !MONO
         [Fact]
         public void AssemblyNameWithMinimalFields()
         {
@@ -572,6 +575,7 @@ namespace Microsoft.Build.UnitTests.BackEnd
 
             HelperAssertAssemblyNameEqual(value, deserializedValue);
         }
+#endif
 
         /// <summary>
         /// Assert two AssemblyName objects values are same.
