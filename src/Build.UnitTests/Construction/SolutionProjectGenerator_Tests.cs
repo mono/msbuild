@@ -28,6 +28,7 @@ using FrameworkLocationHelper = Microsoft.Build.Shared.FrameworkLocationHelper;
 using Xunit;
 using Xunit.Abstractions;
 using Shouldly;
+using Microsoft.Build.UnitTests.Shared;
 
 namespace Microsoft.Build.UnitTests.Construction
 {
@@ -151,9 +152,11 @@ namespace Microsoft.Build.UnitTests.Construction
                     @"
                 {
                   ""solution"": {
+                    // I'm a comment
                     ""path"": "".\\SimpleProject\\SimpleProject.sln"",
                     ""projects"": [
-                      ""SimpleProject\\SimpleProject.csproj""
+                    /* ""..\\ClassLibrary\\ClassLibrary\\ClassLibrary.csproj"", */
+                      ""SimpleProject\\SimpleProject.csproj"",
                     ]
                     }
                 }
@@ -169,6 +172,46 @@ namespace Microsoft.Build.UnitTests.Construction
                 instances[0].Build(targets: null, new List<ILogger> { logger }).ShouldBeTrue();
                 logger.AssertLogContains(new string[] { "SimpleProjectBuilt" });
                 logger.AssertLogDoesntContain("ClassLibraryBuilt");
+            }
+        }
+
+        [Fact]
+        public void BuildProjectAsTarget()
+        {
+            using (TestEnvironment testEnvironment = TestEnvironment.Create())
+            {
+                TransientTestFolder folder = testEnvironment.CreateFolder(createFolder: true);
+                TransientTestFolder classLibFolder = testEnvironment.CreateFolder(Path.Combine(folder.Path, "classlib"), createFolder: true);
+                TransientTestFile classLibrary = testEnvironment.CreateFile(classLibFolder, "classlib.csproj",
+                    @"<Project>
+                  <Target Name=""ClassLibraryTarget"">
+                      <Message Text=""ClassLibraryBuilt""/>
+                  </Target>
+                  </Project>
+                    ");
+
+                TransientTestFolder simpleProjectFolder = testEnvironment.CreateFolder(Path.Combine(folder.Path, "simpleProject"), createFolder: true);
+                TransientTestFile simpleProject = testEnvironment.CreateFile(simpleProjectFolder, "simpleProject.csproj",
+                    @"<Project>
+                  <Target Name=""SimpleProjectTarget"">
+                      <Message Text=""SimpleProjectBuilt""/>
+                  </Target>
+                  </Project>
+                    ");
+
+                TransientTestFile solutionFile = testEnvironment.CreateFile(folder, "testFolder.sln",
+                    @"
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.6.30114.105
+MinimumVisualStudioVersion = 10.0.40219.1
+Project(""{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}"") = ""simpleProject"", ""simpleProject\simpleProject.csproj"", ""{AA52A05F-A9C0-4C89-9933-BF976A304C91}""
+EndProject
+Project(""{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}"") = ""classlib"", ""classlib\classlib.csproj"", ""{80B8E6B8-E46D-4456-91B1-848FD35C4AB9}""
+EndProject
+                ");
+                RunnerUtilities.ExecMSBuild(solutionFile.Path + " /t:classlib", out bool success);
+                success.ShouldBeTrue();
             }
         }
 
@@ -747,6 +790,37 @@ EndGlobal
 </SolutionConfiguration>".Replace("`", "\"").Replace("##temp##", Path.GetTempPath());
 
             Helpers.VerifyAssertLineByLine(expected, solutionConfigurationContents);
+        }
+
+        /// <summary>
+        /// This test forces a metaproj to be generated as part of the build. Since metaproj files are not written to disk, it will fail if its cached form does not align
+        /// with the version that is being built as when a property is part of the version added to the cache, but that version is not passed to the BuildManager.
+        /// </summary>
+        [Fact]
+        public void SolutionGeneratingMetaproj()
+        {
+            using (TestEnvironment env = TestEnvironment.Create())
+            {
+                TransientTestFile proj1 = env.CreateFile("A.csproj", @"<Project><Target Name=""Printer""><Message Importance=""high"" Text=""print string"" /></Target></Project>");
+                TransientTestFile proj2 = env.CreateFile("B.csproj", @"<Project><Target Name=""Printer""><Message Importance=""high"" Text=""print string"" /></Target></Project>");
+                TransientTestFile proj3 = env.CreateFile("C.csproj", @"<Project><Target Name=""Printer""><Message Importance=""high"" Text=""print string"" /></Target></Project>");
+                TransientTestFile proj = env.CreateFile("mysln.sln",
+                @$"
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 11
+Project(`{"{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}"}`) = `A`, `{proj1.Path}`, `{"{786E302A-96CE-43DC-B640-D6B6CC9BF6C0}"}`
+EndProject
+Project(`{"{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}"}`) = `B`, `{proj2.Path}`, `{"{881C1674-4ECA-451D-85B6-D7C59B7F16FA}"}`
+    ProjectSection(ProjectDependencies) = postProject
+        {"{4A727FF8-65F2-401E-95AD-7C8BBFBE3167}"} = {"{4A727FF8-65F2-401E-95AD-7C8BBFBE3167}"}
+    EndProjectSection
+EndProject
+Project(`{"{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}"}`) = `C`, `{proj3.Path}`, `{"{4A727FF8-65F2-401E-95AD-7C8BBFBE3167}"}`
+EndProject
+".Replace("`", "\""));
+                RunnerUtilities.ExecMSBuild("\"" + proj.Path + "\"", out bool successfulExit);
+                successfulExit.ShouldBeTrue();
+            }
         }
 
         /// <summary>

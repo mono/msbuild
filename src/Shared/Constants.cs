@@ -60,8 +60,6 @@ namespace Microsoft.Build.Shared
         /// </summary>
         internal const string CurrentToolsVersion = "Current";
 
-        // if you change the key also change the following clones
-        // Microsoft.Build.OpportunisticIntern.BucketedPrioritizedStringList.TryIntern
         internal const string MSBuildDummyGlobalPropertyHeader = "MSBuildProjectInstance";
 
         /// <summary>
@@ -143,6 +141,11 @@ namespace Microsoft.Build.Shared
         /// Declares a project cache plugin and its configuration.
         /// </summary>
         internal const string ProjectCachePlugin = nameof(ProjectCachePlugin);
+
+        /// <summary>
+        /// Embed specified files in the binary log
+        /// </summary>
+        internal const string EmbedInBinlog = nameof(EmbedInBinlog);
     }
 
     /// <summary>
@@ -168,6 +171,10 @@ namespace Microsoft.Build.Shared
         internal const string subType = "SubType";
         internal const string executableExtension = "ExecutableExtension";
         internal const string embedInteropTypes = "EmbedInteropTypes";
+
+        /// <summary>
+        /// The output path for a given item.
+        /// </summary>
         internal const string targetPath = "TargetPath";
         internal const string dependentUpon = "DependentUpon";
         internal const string msbuildSourceProjectFile = "MSBuildSourceProjectFile";

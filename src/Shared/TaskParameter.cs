@@ -1,14 +1,15 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
+using System.Reflection;
 using System.Security;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Shared;
-using System.Reflection;
 
 namespace Microsoft.Build.BackEnd
 {
@@ -492,7 +493,11 @@ namespace Microsoft.Build.BackEnd
 #if FEATURE_APPDOMAIN
             MarshalByRefObject,
 #endif
-            ITaskItem, ITaskItem2
+            ITaskItem,
+            ITaskItem2
+#if !TASKHOST
+            ,IMetadataContainer
+#endif
         {
             /// <summary>
             /// The item spec 
@@ -750,6 +755,55 @@ namespace Microsoft.Build.BackEnd
             {
                 IDictionary clonedDictionary = new Dictionary<string, string>(_customEscapedMetadata);
                 return clonedDictionary;
+            }
+
+            public IEnumerable<KeyValuePair<string, string>> EnumerateMetadata()
+            {
+#if FEATURE_APPDOMAIN
+                if (!AppDomain.CurrentDomain.IsDefaultAppDomain())
+                {
+                    return EnumerateMetadataEager();
+                }
+#endif
+
+                return EnumerateMetadataLazy();
+            }
+
+            private IEnumerable<KeyValuePair<string, string>> EnumerateMetadataEager()
+            {
+                if (_customEscapedMetadata == null || _customEscapedMetadata.Count == 0)
+                {
+#if TASKHOST
+                    // MSBuildTaskHost.dll compiles against .NET 3.5 which doesn't have Array.Empty()
+                    return new KeyValuePair<string, string>[0];
+#else
+                    return Array.Empty<KeyValuePair<string, string>>();
+#endif
+                }
+
+                var result = new KeyValuePair<string, string>[_customEscapedMetadata.Count];
+                int index = 0;
+                foreach (var kvp in _customEscapedMetadata)
+                {
+                    var unescaped = new KeyValuePair<string, string>(kvp.Key, EscapingUtilities.UnescapeAll(kvp.Value));
+                    result[index++] = unescaped;
+                }
+
+                return result;
+            }
+
+            private IEnumerable<KeyValuePair<string, string>> EnumerateMetadataLazy()
+            {
+                if (_customEscapedMetadata == null)
+                {
+                    yield break;
+                }
+
+                foreach (var kvp in _customEscapedMetadata)
+                {
+                    var unescaped = new KeyValuePair<string, string>(kvp.Key, EscapingUtilities.UnescapeAll(kvp.Value));
+                    yield return unescaped;
+                }
             }
         }
     }

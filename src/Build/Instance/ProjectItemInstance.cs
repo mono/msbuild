@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
@@ -28,7 +28,13 @@ namespace Microsoft.Build.Execution
     /// and evaluation has already been performed, so it is unnecessary bulk.
     /// </remarks>
     [DebuggerDisplay("{ItemType}={EvaluatedInclude} #DirectMetadata={DirectMetadataCount})")]
-    public class ProjectItemInstance : IItem<ProjectMetadataInstance>, ITaskItem2, IMetadataTable, ITranslatable, IDeepCloneable<ProjectItemInstance>
+    public class ProjectItemInstance :
+        IItem<ProjectMetadataInstance>,
+        ITaskItem2,
+        IMetadataTable,
+        ITranslatable,
+        IDeepCloneable<ProjectItemInstance>,
+        IMetadataContainer
     {
         /// <summary>
         /// The project instance to which this item belongs.
@@ -515,6 +521,8 @@ namespace Microsoft.Build.Execution
             return ((ITaskItem2)_taskItem).CloneCustomMetadataEscaped();
         }
 
+        IEnumerable<KeyValuePair<string, string>> IMetadataContainer.EnumerateMetadata() => _taskItem.EnumerateMetadata();
+
         #region IMetadataTable Members
 
         /// <summary>
@@ -723,7 +731,11 @@ namespace Microsoft.Build.Execution
 #if FEATURE_APPDOMAIN
             MarshalByRefObject,
 #endif
-            ITaskItem2, IItem<ProjectMetadataInstance>, ITranslatable, IEquatable<TaskItem>
+            ITaskItem2,
+            IItem<ProjectMetadataInstance>,
+            ITranslatable,
+            IEquatable<TaskItem>,
+            IMetadataContainer
         {
             /// <summary>
             /// The source file that defined this item.
@@ -1046,6 +1058,68 @@ namespace Microsoft.Build.Execution
             }
 
             /// <summary>
+            /// Efficient way to retrieve metadata used by packet serialization
+            /// and binary logger.
+            /// </summary>
+            public IEnumerable<KeyValuePair<string, string>> EnumerateMetadata()
+            {
+                // If we have item definitions, call the expensive property that does the right thing.
+                // Otherwise use _directMetadata to avoid allocations caused by DeepClone().
+                var list = _itemDefinitions != null ? MetadataCollection : _directMetadata;
+                if (list != null)
+                {
+#if FEATURE_APPDOMAIN
+                    // Can't send a yield-return iterator across AppDomain boundaries
+                    if (!AppDomain.CurrentDomain.IsDefaultAppDomain())
+                    {
+                        return EnumerateMetadataEager(list);
+                    }
+#endif
+                    // Mainline scenario, returns an iterator to avoid allocating an array
+                    // to store the results. With the iterator, results can stream to the
+                    // consumer (e.g. binlog writer) without allocations.
+                    return EnumerateMetadata(list);
+                }
+                else
+                {
+                    return Array.Empty<KeyValuePair<string, string>>();
+                }
+            }
+
+            /// <summary>
+            /// Used to return metadata from another AppDomain. Can't use yield return because the
+            /// generated state machine is not marked as [Serializable], so we need to allocate.
+            /// </summary>
+            /// <param name="list">The source list to return metadata from.</param>
+            /// <returns>An array of string key-value pairs representing metadata.</returns>
+            private IEnumerable<KeyValuePair<string, string>> EnumerateMetadataEager(CopyOnWritePropertyDictionary<ProjectMetadataInstance> list)
+            {
+                var result = new List<KeyValuePair<string, string>>(list.Count);
+
+                foreach (var projectMetadataInstance in list)
+                {
+                    if (projectMetadataInstance != null)
+                    {
+                        result.Add(new KeyValuePair<string, string>(projectMetadataInstance.Name, projectMetadataInstance.EvaluatedValue));
+                    }
+                }
+
+                // Probably better to send the raw array across the wire even if it's another allocation.
+                return result.ToArray();
+            }
+
+            private IEnumerable<KeyValuePair<string, string>> EnumerateMetadata(CopyOnWritePropertyDictionary<ProjectMetadataInstance> list)
+            {
+                foreach (var projectMetadataInstance in list)
+                {
+                    if (projectMetadataInstance != null)
+                    {
+                        yield return new KeyValuePair<string, string>(projectMetadataInstance.Name, projectMetadataInstance.EvaluatedValue);
+                    }
+                }
+            }
+
+            /// <summary>
             /// Unordered collection of evaluated metadata on the item.
             /// If there is no metadata, returns an empty collection.
             /// Does not include built-in metadata.
@@ -1110,7 +1184,7 @@ namespace Microsoft.Build.Execution
 
             IEnumerable<ProjectMetadataInstance> IItem<ProjectMetadataInstance>.Metadata => MetadataCollection;
 
-            #region Operators
+#region Operators
 
             /// <summary>
             /// This allows an explicit typecast from a "TaskItem" to a "string", returning the ItemSpec for this item.
@@ -1151,7 +1225,7 @@ namespace Microsoft.Build.Execution
                 return !(left == right);
             }
 
-            #endregion
+#endregion
 
             /// <summary>
             /// Produce a string representation.
@@ -1173,7 +1247,7 @@ namespace Microsoft.Build.Execution
             }
 #endif
 
-            #region IItem and ITaskItem2 Members
+#region IItem and ITaskItem2 Members
 
             /// <summary>
             /// Returns the metadata with the specified key.
@@ -1425,9 +1499,9 @@ namespace Microsoft.Build.Execution
                 return clonedMetadata;
             }
 
-            #endregion
+#endregion
 
-            #region INodePacketTranslatable Members
+#region INodePacketTranslatable Members
 
             /// <summary>
             /// Reads or writes the packet to the serializer.
@@ -1457,9 +1531,9 @@ namespace Microsoft.Build.Execution
                 }
             }
 
-            #endregion
+#endregion
 
-            #region IEquatable<TaskItem> Members
+#region IEquatable<TaskItem> Members
 
             /// <summary>
             /// Override of GetHashCode.
@@ -1537,7 +1611,7 @@ namespace Microsoft.Build.Execution
                 return true;
             }
 
-            #endregion
+#endregion
 
             /// <summary>
             /// Returns true if a particular piece of metadata is defined on this item (even if

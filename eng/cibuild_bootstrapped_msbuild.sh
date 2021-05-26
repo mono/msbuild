@@ -74,9 +74,10 @@ function DownloadMSBuildForMono {
 RepoRoot="$ScriptRoot/.."
 artifacts_dir="$RepoRoot/artifacts"
 Stage1Dir="$RepoRoot/stage1"
+PerfLogDir="$ArtifactsDir/log/$configuration/PerformanceLogs"
 
 mono_msbuild_dir="$artifacts_dir/mono-msbuild"
-msbuild_download_url="https://github.com/mono/msbuild/releases/download/0.08/mono_msbuild_6.4.0.208.zip"
+msbuild_download_url="https://github.com/mono/msbuild/releases/download/v16.9.0/mono_msbuild_6.12.0.137.zip"
 msbuild_zip="$artifacts_dir/msbuild.zip"
 roslyn_version_to_use=`grep -i MicrosoftNetCompilersVersion $ScriptRoot/Versions.props  | sed -e 's,^.*>\([^<]*\)<.*$,\1,'`
 nuget_version_to_use=`grep -i NuGetBuildTasksVersion $ScriptRoot/Versions.props  | sed -e 's,^.*>\([^<]*\)<.*$,\1,'`
@@ -125,7 +126,7 @@ bootstrapRoot="$Stage1Dir/bin/bootstrap"
 if [ $host_type = "core" ]
 then
   _InitializeBuildTool="$_InitializeDotNetCli/dotnet"
-  _InitializeBuildToolCommand="$bootstrapRoot/netcoreapp2.1/MSBuild/MSBuild.dll"
+  _InitializeBuildToolCommand="$bootstrapRoot/net5.0/MSBuild/MSBuild.dll"
   _InitializeBuildToolFramework="netcoreapp2.1"
 elif [ $host_type = "mono" ]
 then
@@ -148,6 +149,9 @@ mv $artifacts_dir $Stage1Dir
 
 # Ensure that debug bits fail fast, rather than hanging waiting for a debugger attach.
 export MSBUILDDONOTLAUNCHDEBUGGER=true
+
+# Opt into performance logging.
+export DOTNET_PERFLOG_DIR=$PerfLogDir
 
 # Prior to 3.0, the Csc task uses this environment variable to decide whether to run
 # a CLI host or directly execute the compiler.

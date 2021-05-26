@@ -410,7 +410,9 @@ namespace Microsoft.Build.Construction
         {
             try
             {
-                JsonDocument text = JsonDocument.Parse(File.ReadAllText(solutionFilterFile));
+                // This is to align MSBuild with what VS permits in loading solution filter files. These are not in them by default but can be added manually.
+                JsonDocumentOptions options = new JsonDocumentOptions() { AllowTrailingCommas = true, CommentHandling = JsonCommentHandling.Skip };
+                JsonDocument text = JsonDocument.Parse(File.ReadAllText(solutionFilterFile), options);
                 solution = text.RootElement.GetProperty("solution");
                 return FileUtilities.GetFullPath(solution.GetProperty("path").GetString(), Path.GetDirectoryName(solutionFilterFile));
             }
@@ -612,7 +614,7 @@ namespace Microsoft.Build.Construction
                 }
 
                 // Detect collision caused by unique name's normalization
-                if (projectsByUniqueName.ContainsKey(uniqueName))
+                if (projectsByUniqueName.TryGetValue(uniqueName, out ProjectInSolution project))
                 {
                     // Did normalization occur in the current project?
                     if (uniqueName != proj.ProjectName)
@@ -623,16 +625,14 @@ namespace Microsoft.Build.Construction
                         uniqueName = tempUniqueName;
                     }
                     // Did normalization occur in a previous project?
-                    else if (uniqueName != projectsByUniqueName[uniqueName].ProjectName)
+                    else if (uniqueName != project.ProjectName)
                     {
-                        var projTemp = projectsByUniqueName[uniqueName];
-
                         // Generates a new unique name
-                        string tempUniqueName = $"{uniqueName}_{projTemp.GetProjectGuidWithoutCurlyBrackets()}";
-                        projTemp.UpdateUniqueProjectName(tempUniqueName);
+                        string tempUniqueName = $"{uniqueName}_{project.GetProjectGuidWithoutCurlyBrackets()}";
+                        project.UpdateUniqueProjectName(tempUniqueName);
 
                         projectsByUniqueName.Remove(uniqueName);
-                        projectsByUniqueName.Add(tempUniqueName, projTemp);
+                        projectsByUniqueName.Add(tempUniqueName, project);
                     }
                 }
 

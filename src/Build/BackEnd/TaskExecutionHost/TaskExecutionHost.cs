@@ -24,6 +24,7 @@ using Microsoft.Build.Shared;
 using Microsoft.Build.Utilities;
 
 using TaskItem = Microsoft.Build.Execution.ProjectItemInstance.TaskItem;
+using Task = System.Threading.Tasks.Task;
 
 namespace Microsoft.Build.BackEnd
 {
@@ -1098,13 +1099,30 @@ namespace Microsoft.Build.BackEnd
                 else
                 {
                     // flag an error if we find a parameter that has no .NET property equivalent
-                    _taskLoggingContext.LogError
-                        (
-                        new BuildEventFileInfo(parameterLocation),
-                        "UnexpectedTaskAttribute",
-                        parameterName,
-                        _taskName
-                        );
+                    if (_taskFactoryWrapper.TaskFactoryLoadedType.LoadedAssembly is null)
+                    {
+                        _taskLoggingContext.LogError
+                            (
+                            new BuildEventFileInfo( parameterLocation ),
+                            "UnexpectedTaskAttribute",
+                            parameterName,
+                            _taskName,
+                            _taskFactoryWrapper.TaskFactoryLoadedType.Type.Assembly.FullName,
+                            _taskFactoryWrapper.TaskFactoryLoadedType.Type.Assembly.Location
+                            );
+                    }
+                    else
+                    {
+                        _taskLoggingContext.LogError
+                            (
+                            new BuildEventFileInfo( parameterLocation ),
+                            "UnexpectedTaskAttribute",
+                            parameterName,
+                            _taskName,
+                            _taskFactoryWrapper.TaskFactoryLoadedType.LoadedAssembly.FullName,
+                            _taskFactoryWrapper.TaskFactoryLoadedType.LoadedAssembly.Location
+                            );
+                    }
                 }
             }
             catch (AmbiguousMatchException)
@@ -1316,16 +1334,18 @@ namespace Microsoft.Build.BackEnd
                 parameterValue.Count > 0 &&
                 parameter.Log)
             {
-                string parameterText = ItemGroupLoggingHelper.GetParameterText(
-                    ItemGroupLoggingHelper.TaskParameterPrefix,
+                ItemGroupLoggingHelper.LogTaskParameter(
+                    _taskLoggingContext,
+                    TaskParameterMessageKind.TaskInput,
                     parameter.Name,
                     parameterValue,
                     parameter.LogItemMetadata);
-                _taskLoggingContext.LogCommentFromText(MessageImportance.Low, parameterText);
             }
 
             return InternalSetTaskParameter(parameter, (object)parameterValue);
         }
+
+        private static readonly string TaskParameterFormatString = ItemGroupLoggingHelper.TaskParameterPrefix + "{0}={1}";
 
         /// <summary>
         /// Given an instantiated task, this helper method sets the specified parameter
@@ -1338,7 +1358,6 @@ namespace Microsoft.Build.BackEnd
         {
             bool success = false;
 
-            // Logging currently enabled only by an env var.
             if (LogTaskInputs && !_taskLoggingContext.LoggingService.OnlyLogCriticalEvents)
             {
                 // If the type is a list, we already logged the parameters
@@ -1346,7 +1365,9 @@ namespace Microsoft.Build.BackEnd
                 {
                     _taskLoggingContext.LogCommentFromText(
                         MessageImportance.Low,
-                        ItemGroupLoggingHelper.TaskParameterPrefix + parameter.Name + "=" + ItemGroupLoggingHelper.GetStringFromParameterValue(parameterValue));
+                        TaskParameterFormatString,
+                        parameter.Name,
+                        ItemGroupLoggingHelper.GetStringFromParameterValue(parameterValue));
                 }
             }
 
@@ -1409,11 +1430,16 @@ namespace Microsoft.Build.BackEnd
             {
                 if (outputTargetIsItem)
                 {
+                    // Only count non-null elements. We sometimes have a single-element array where the element is null
+                    bool hasElements = false;
+
                     foreach (ITaskItem output in outputs)
                     {
                         // if individual items in the array are null, ignore them
                         if (output != null)
                         {
+                            hasElements = true;
+
                             ProjectItemInstance newItem;
 
                             TaskItem outputAsProjectItem = output as TaskItem;
@@ -1457,15 +1483,14 @@ namespace Microsoft.Build.BackEnd
                         }
                     }
 
-                    if (LogTaskInputs && !_taskLoggingContext.LoggingService.OnlyLogCriticalEvents && outputs.Length > 0 && parameter.Log)
+                    if (hasElements && LogTaskInputs && !_taskLoggingContext.LoggingService.OnlyLogCriticalEvents && parameter.Log)
                     {
-                        string parameterText = ItemGroupLoggingHelper.GetParameterText(
-                            ItemGroupLoggingHelper.OutputItemParameterMessagePrefix,
+                        ItemGroupLoggingHelper.LogTaskParameter(
+                            _taskLoggingContext,
+                            TaskParameterMessageKind.TaskOutput,
                             outputTargetName,
                             outputs,
                             parameter.LogItemMetadata);
-
-                        _taskLoggingContext.LogCommentFromText(MessageImportance.Low, parameterText);
                     }
                 }
                 else
@@ -1536,12 +1561,12 @@ namespace Microsoft.Build.BackEnd
 
                     if (LogTaskInputs && !_taskLoggingContext.LoggingService.OnlyLogCriticalEvents && outputs.Length > 0 && parameter.Log)
                     {
-                        string parameterText = ItemGroupLoggingHelper.GetParameterText(
-                            ItemGroupLoggingHelper.OutputItemParameterMessagePrefix,
+                        ItemGroupLoggingHelper.LogTaskParameter(
+                            _taskLoggingContext,
+                            TaskParameterMessageKind.TaskOutput,
                             outputTargetName,
                             outputs,
                             parameter.LogItemMetadata);
-                        _taskLoggingContext.LogCommentFromText(MessageImportance.Low, parameterText);
                     }
                 }
                 else

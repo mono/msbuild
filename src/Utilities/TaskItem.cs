@@ -1,9 +1,10 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using System.Security;
 #if FEATURE_SECURITY_PERMISSIONS
 using System.Security.Permissions;
@@ -30,7 +31,8 @@ namespace Microsoft.Build.Utilities
 #if FEATURE_APPDOMAIN
         MarshalByRefObject,
 #endif
-        ITaskItem, ITaskItem2
+        ITaskItem2,
+        IMetadataContainer // expose direct underlying metadata for fast access in binary logger
     {
         #region Member Data
 
@@ -297,10 +299,25 @@ namespace Microsoft.Build.Utilities
 
             if (_metadata != null)
             {
-                // Avoid a copy if we can
-                if (destinationItem is TaskItem destinationAsTaskItem && destinationAsTaskItem.Metadata == null)
+                if (destinationItem is TaskItem destinationAsTaskItem)
                 {
-                    destinationAsTaskItem.Metadata = _metadata.Clone(); // Copy on write!
+                    CopyOnWriteDictionary<string> copiedMetadata;
+                    // Avoid a copy if we can, and if not, minimize the number of items we have to set.
+                    if (destinationAsTaskItem.Metadata == null)
+                    {
+                        copiedMetadata = _metadata.Clone(); // Copy on write!
+                    }
+                    else if (destinationAsTaskItem.Metadata.Count < _metadata.Count)
+                    {
+                        copiedMetadata = _metadata.Clone(); // Copy on write!
+                        copiedMetadata.SetItems(destinationAsTaskItem.Metadata.Where(entry => !String.IsNullOrEmpty(entry.Value)));
+                    }
+                    else
+                    {
+                        copiedMetadata = destinationAsTaskItem.Metadata.Clone();
+                        copiedMetadata.SetItems(_metadata.Where(entry => !destinationAsTaskItem.Metadata.TryGetValue(entry.Key, out string val) || String.IsNullOrEmpty(val)));
+                    }
+                    destinationAsTaskItem.Metadata = copiedMetadata;
                 }
                 else
                 {
@@ -445,5 +462,54 @@ namespace Microsoft.Build.Utilities
             : _metadata.Clone();
 
         #endregion
+
+        IEnumerable<KeyValuePair<string, string>> IMetadataContainer.EnumerateMetadata()
+        {
+#if FEATURE_APPDOMAIN
+            // Can't send a yield-return iterator across AppDomain boundaries
+            // so have to allocate
+            if (!AppDomain.CurrentDomain.IsDefaultAppDomain())
+            {
+                return EnumerateMetadataEager();
+            }
+#endif
+
+            // In general case we want to return an iterator without allocating a collection
+            // to hold the result, so we can stream the items directly to the consumer.
+            return EnumerateMetadataLazy();
+        }
+
+        private IEnumerable<KeyValuePair<string, string>> EnumerateMetadataEager()
+        {
+            if (_metadata == null)
+            {
+                return Array.Empty<KeyValuePair<string, string>>();
+            }
+
+            int count = _metadata.Count;
+            int index = 0;
+            var result = new KeyValuePair<string, string>[count];
+            foreach (var kvp in _metadata)
+            {
+                var unescaped = new KeyValuePair<string, string>(kvp.Key, EscapingUtilities.UnescapeAll(kvp.Value));
+                result[index++] = unescaped;
+            }
+
+            return result;
+        }
+
+        private IEnumerable<KeyValuePair<string, string>> EnumerateMetadataLazy()
+        {
+            if (_metadata == null)
+            {
+                yield break;
+            }
+
+            foreach (var kvp in _metadata)
+            {
+                var unescaped = new KeyValuePair<string, string>(kvp.Key, EscapingUtilities.UnescapeAll(kvp.Value));
+                yield return unescaped;
+            }
+        }
     }
 }

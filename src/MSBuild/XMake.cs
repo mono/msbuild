@@ -4,9 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-#if FEATURE_SYSTEM_CONFIGURATION
 using System.Configuration;
-#endif
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
@@ -22,6 +20,7 @@ using Microsoft.Build.Evaluation;
 using Microsoft.Build.Eventing;
 using Microsoft.Build.Exceptions;
 using Microsoft.Build.Execution;
+using Microsoft.Build.Experimental.ProjectCache;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Graph;
 using Microsoft.Build.Logging;
@@ -83,7 +82,11 @@ namespace Microsoft.Build.CommandLine
             /// The build stopped unexpectedly, for example,
             /// because a child died or hung.
             /// </summary>
-            Unexpected
+            Unexpected,
+            /// <summary>
+            /// A project cache failed unexpectedly.
+            /// </summary>
+            ProjectCacheFailure
         }
 
         /// <summary>
@@ -563,7 +566,7 @@ namespace Microsoft.Build.CommandLine
                 bool enableProfiler = false;
                 bool interactive = false;
                 bool isolateProjects = false;
-                bool graphBuild = false;
+                GraphBuildOptions graphBuildOptions = null;
                 bool lowPriority = false;
                 string[] inputResultsCaches = null;
                 string outputResultsCache = null;
@@ -597,7 +600,7 @@ namespace Microsoft.Build.CommandLine
                         ref enableProfiler,
                         ref restoreProperties,
                         ref isolateProjects,
-                        ref graphBuild,
+                        ref graphBuildOptions,
                         ref inputResultsCaches,
                         ref outputResultsCache,
                         ref lowPriority,
@@ -675,7 +678,7 @@ namespace Microsoft.Build.CommandLine
                                     enableProfiler,
                                     interactive,
                                     isolateProjects,
-                                    graphBuild,
+                                    graphBuildOptions,
                                     lowPriority,
                                     inputResultsCaches,
                                     outputResultsCache))
@@ -787,6 +790,24 @@ namespace Microsoft.Build.CommandLine
                         $"MSBUILD : error {e.ErrorCode}: {e.Message}{(e.InnerException != null ? $" {e.InnerException.Message}" : "")}");
                     exitType = ExitType.InitializationError;
                 }
+            }
+            catch (ProjectCacheException e)
+            {
+                Console.WriteLine($"MSBUILD : error {e.ErrorCode}: {e.Message}");
+
+#if DEBUG
+                if (!e.HasBeenLoggedByProjectCache && e.InnerException != null)
+                {
+                    Console.WriteLine("This is an unhandled exception from a project cache -- PLEASE OPEN A BUG AGAINST THE PROJECT CACHE OWNER.");
+                }
+#endif
+
+                if (e.InnerException is not null)
+                {
+                    Console.WriteLine(e.InnerException.ToString());
+                }
+
+                exitType = ExitType.ProjectCacheFailure;
             }
             catch (BuildAbortedException e)
             {
@@ -984,7 +1005,7 @@ namespace Microsoft.Build.CommandLine
             bool enableProfiler,
             bool interactive,
             bool isolateProjects,
-            bool graphBuild,
+            GraphBuildOptions graphBuildOptions,
             bool lowPriority,
             string[] inputResultsCaches,
             string outputResultsCache
@@ -1220,9 +1241,9 @@ namespace Microsoft.Build.CommandLine
                             BuildRequestData buildRequest = null;
                             if (!restoreOnly)
                             {
-                                if (graphBuild)
+                                if (graphBuildOptions != null)
                                 {
-                                    graphBuildRequest = new GraphBuildRequestData(new ProjectGraphEntryPoint(projectFile, globalProperties), targets, null);
+                                    graphBuildRequest = new GraphBuildRequestData(new[]{ new ProjectGraphEntryPoint(projectFile, globalProperties) }, targets, null, BuildRequestDataFlags.None, graphBuildOptions);
                                 }
                                 else
                                 {
@@ -1242,7 +1263,7 @@ namespace Microsoft.Build.CommandLine
 
                             if (!restoreOnly)
                             {
-                                if (graphBuild)
+                                if (graphBuildOptions != null)
                                 {
                                     (result, exception) = ExecuteGraphBuild(buildManager, graphBuildRequest);
                                 }
@@ -1273,21 +1294,17 @@ namespace Microsoft.Build.CommandLine
                         success = false;
 
                         // InvalidProjectFileExceptions and its aggregates have already been logged.
-                        if (exception.GetType() != typeof(InvalidProjectFileException)
+                        if (exception is not InvalidProjectFileException
                             && !(exception is AggregateException aggregateException && aggregateException.InnerExceptions.All(innerException => innerException is InvalidProjectFileException)))
                         {
-                            if
-                                (
-                                exception.GetType() == typeof(LoggerException) ||
-                                exception.GetType() == typeof(InternalLoggerException)
-                                )
+                            if (exception is LoggerException or InternalLoggerException or ProjectCacheException)
                             {
-                                // We will rethrow this so the outer exception handler can catch it, but we don't
+                                // We will rethrow these so the outer exception handler can catch them, but we don't
                                 // want to log the outer exception stack here.
                                 throw exception;
                             }
 
-                            if (exception.GetType() == typeof(BuildAbortedException))
+                            if (exception is BuildAbortedException)
                             {
                                 // this is not a bug and should not dump stack. It will already have been logged
                                 // appropriately, there is no need to take any further action with it.
@@ -1436,13 +1453,15 @@ namespace Microsoft.Build.CommandLine
             //  - BuildRequestDataFlags.SkipNonexistentTargets to ignore missing targets since Restore does not require that all targets exist
             //  - BuildRequestDataFlags.IgnoreMissingEmptyAndInvalidImports to ignore imports that don't exist, are empty, or are invalid because restore might
             //     make available an import that doesn't exist yet and the <Import /> might be missing a condition.
+            //  - BuildRequestDataFlags.FailOnUnresolvedSdk to still fail in the case when an MSBuild project SDK can't be resolved since this is fatal and should
+            //     fail the build.
             BuildRequestData restoreRequest = new BuildRequestData(
                 projectFile,
                 restoreGlobalProperties,
                 toolsVersion,
                 targetsToBuild: new[] { MSBuildConstants.RestoreTargetName },
                 hostServices: null,
-                flags: BuildRequestDataFlags.ClearCachesAfterBuild | BuildRequestDataFlags.SkipNonexistentTargets | BuildRequestDataFlags.IgnoreMissingEmptyAndInvalidImports);
+                flags: BuildRequestDataFlags.ClearCachesAfterBuild | BuildRequestDataFlags.SkipNonexistentTargets | BuildRequestDataFlags.IgnoreMissingEmptyAndInvalidImports | BuildRequestDataFlags.FailOnUnresolvedSdk);
 
             return ExecuteBuild(buildManager, restoreRequest);
         }
@@ -2103,7 +2122,7 @@ namespace Microsoft.Build.CommandLine
             ref bool enableProfiler,
             ref Dictionary<string, string> restoreProperties,
             ref bool isolateProjects,
-            ref bool graphBuild,
+            ref GraphBuildOptions graphBuild,
             ref string[] inputResultsCaches,
             ref string outputResultsCache,
             ref bool lowPriority,
@@ -2262,8 +2281,6 @@ namespace Microsoft.Build.CommandLine
                         targetsWriter = ProcessTargetsSwitch(commandLineSwitches[CommandLineSwitches.ParameterizedSwitch.Targets]);
                     }
 
-                    detailedSummary = commandLineSwitches.IsParameterlessSwitchSet(CommandLineSwitches.ParameterlessSwitch.DetailedSummary);
-
                     warningsAsErrors = ProcessWarnAsErrorSwitch(commandLineSwitches);
 
                     warningsAsMessages = ProcessWarnAsMessageSwitch(commandLineSwitches);
@@ -2285,7 +2302,7 @@ namespace Microsoft.Build.CommandLine
 
                     if (commandLineSwitches.IsParameterizedSwitchSet(CommandLineSwitches.ParameterizedSwitch.GraphBuild))
                     {
-                        graphBuild = ProcessBooleanSwitch(commandLineSwitches[CommandLineSwitches.ParameterizedSwitch.GraphBuild], defaultValue: true, resourceName: "InvalidGraphBuildValue");
+                        graphBuild = ProcessGraphBuildSwitch(commandLineSwitches[CommandLineSwitches.ParameterizedSwitch.GraphBuild]);
                     }
 
                     if (commandLineSwitches.IsParameterizedSwitchSet(CommandLineSwitches.ParameterizedSwitch.LowPriority))
@@ -2313,13 +2330,21 @@ namespace Microsoft.Build.CommandLine
                         groupedFileLoggerParameters,
                         out distributedLoggerRecords,
                         out verbosity,
-                        ref detailedSummary,
                         cpuCount,
                         out profilerLogger,
                         out enableProfiler
                         );
 
-                    // If we picked up switches from the autoreponse file, let the user know. This could be a useful
+                    if (commandLineSwitches.IsParameterizedSwitchSet(CommandLineSwitches.ParameterizedSwitch.DetailedSummary))
+                    {
+                        detailedSummary = ProcessBooleanSwitch(commandLineSwitches[CommandLineSwitches.ParameterizedSwitch.DetailedSummary], defaultValue: true, resourceName: "InvalidDetailedSummaryValue");
+                    }
+                    else if (verbosity == LoggerVerbosity.Diagnostic)
+                    {
+                        detailedSummary = true;
+                    }
+
+                    // If we picked up switches from the autoresponse file, let the user know. This could be a useful
                     // hint to a user that does not know that we are picking up the file automatically.
                     // Since this is going to happen often in normal use, only log it in high verbosity mode.
                     // Also, only log it to the console; logging to loggers would involve increasing the public API of
@@ -2347,6 +2372,37 @@ namespace Microsoft.Build.CommandLine
             ErrorUtilities.VerifyThrow(!invokeBuild || !string.IsNullOrEmpty(projectFile), "We should have a project file if we're going to build.");
 
             return invokeBuild;
+        }
+
+        internal static GraphBuildOptions ProcessGraphBuildSwitch(string[] parameters)
+        {
+            var options = new GraphBuildOptions();
+
+            // Before /graph had parameters, it was treated as a boolean switch.
+            // Preserve that in case anyone is using /graph:{false|true}
+            if (parameters.Length == 1 && bool.TryParse(parameters[0], out var boolValue))
+            {
+                return boolValue ? options : null;
+            }
+
+            foreach (var parameter in parameters)
+            {
+                if (string.IsNullOrWhiteSpace(parameter))
+                {
+                    continue;
+                }
+
+                if (parameter.Trim().Equals("NoBuild", StringComparison.OrdinalIgnoreCase))
+                {
+                    options = options with {Build = false};
+                }
+                else
+                {
+                    CommandLineSwitchException.Throw("InvalidGraphBuildValue", parameter);
+                }
+            }
+
+            return options;
         }
 
         private static string ProcessOutputResultsCache(CommandLineSwitches commandLineSwitches)
@@ -2997,7 +3053,6 @@ namespace Microsoft.Build.CommandLine
             string[][] groupedFileLoggerParameters,
             out List<DistributedLoggerRecord> distributedLoggerRecords,
             out LoggerVerbosity verbosity,
-            ref bool detailedSummary,
             int cpuCount,
             out ProfilerLogger profilerLogger,
             out bool enableProfiler
@@ -3026,11 +3081,6 @@ namespace Microsoft.Build.CommandLine
             ProcessBinaryLogger(binaryLoggerParameters, loggers, ref verbosity);
 
             profilerLogger = ProcessProfileEvaluationSwitch(profileEvaluationParameters, loggers, out enableProfiler);
-
-            if (verbosity == LoggerVerbosity.Diagnostic)
-            {
-                detailedSummary = true;
-            }
 
             return loggers.ToArray();
         }
